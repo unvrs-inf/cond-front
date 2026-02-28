@@ -21,5 +21,5 @@ export async function getServiceTypes(
     size: size.toString(),
   });
 
-  return client.get<ServiceTypesResponse>(`/serviceTypes?${params.toString()}`);
+  return client.get<ServiceTypesResponse>(`/typeOfService?${params.toString()}`);
 }

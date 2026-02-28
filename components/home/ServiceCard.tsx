@@ -37,7 +37,7 @@ export function ServiceCard({ service }: ServiceCardProps) {
           color: 'var(--tg-theme-accent-text-color)',
         }}
       >
-        {service.price.toLocaleString('ru-RU')} ₽
+        {service.cost.toLocaleString('ru-RU')} ₽
       </p>
     </div>
   );
