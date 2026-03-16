@@ -1,23 +1,21 @@
 'use client';
 
+import Image from 'next/image';
+
 export function BottomNavBar() {
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 h-16 flex items-center justify-center border-t"
       style={{
-        backgroundColor: 'var(--tg-theme-bottom-bar-bg-color)',
-        borderColor: 'var(--tg-theme-section-separator-color)',
-        paddingBottom: 'var(--tg-safe-area-inset-bottom, 0px)',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        borderColor: 'rgba(255,255,255,0.1)',
       }}
     >
-      <button
-        className="flex flex-col items-center justify-center px-6 py-2 transition-opacity hover:opacity-80"
-        style={{
-          color: 'var(--tg-theme-accent-text-color)',
-        }}
-      >
-        <span className="text-2xl mb-1">🏠</span>
-        <span className="text-xs">Главная</span>
+      <button className="flex flex-col items-center justify-center px-6 py-2 transition-opacity hover:opacity-80">
+        <Image src="/home.svg" width={28} height={28} alt="Главная" className="mb-1"
+          style={{ filter: 'brightness(0) invert(1)' }} />
       </button>
     </nav>
   );

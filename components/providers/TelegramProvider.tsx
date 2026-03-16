@@ -27,33 +27,34 @@ export function TelegramProvider({ children }: TelegramProviderProps) {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // Initialize Telegram WebApp
-    const app = initTelegramWebApp();
+    function initialize(): (() => void) | null {
+      const app = initTelegramWebApp();
 
-    if (app) {
+      if (!app) return null;
+
       setWebApp(app);
       setInitData(getTelegramInitData());
-
-      // Apply initial theme
       applyTelegramTheme(app);
 
-      // Listen for theme changes
-      const handleThemeChange = () => {
-        applyTelegramTheme(app);
-      };
-
+      const handleThemeChange = () => applyTelegramTheme(app);
       app.onEvent('themeChanged', handleThemeChange);
-
       setIsReady(true);
 
-      // Cleanup
-      return () => {
-        app.offEvent('themeChanged', handleThemeChange);
-      };
-    } else {
-      // Not in Telegram, but mark as ready for development
-      setIsReady(true);
+      return () => app.offEvent('themeChanged', handleThemeChange);
     }
+
+    // Try immediately (works when Telegram injects WebApp natively)
+    const cleanup = initialize();
+    if (cleanup) return cleanup;
+
+    // Script not ready yet — wait for it to load
+    const handleLoad = () => {
+      initialize();
+      setIsReady(true);
+    };
+    window.addEventListener('telegram-loaded', handleLoad);
+
+    return () => window.removeEventListener('telegram-loaded', handleLoad);
   }, []);
 
   return (

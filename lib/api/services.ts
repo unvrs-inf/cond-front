@@ -14,7 +14,7 @@ export async function getServiceTypes(
   size: number = 20
 ): Promise<ServiceTypesResponse> {
   const client = new ApiClient(initData);
-
+  
   // Build query string
   const params = new URLSearchParams({
     page: page.toString(),

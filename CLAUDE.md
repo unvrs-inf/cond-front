@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Next.js 16 application using React 19, TypeScript, and Tailwind CSS v4. The project uses the App Router architecture introduced in Next.js 13+.
+This is a **Telegram Mini App** for air conditioning maintenance services, built with Next.js 16, React 19, TypeScript, and Tailwind CSS v4. It uses the App Router architecture and integrates with Telegram's WebApp API via `@twa-dev/types`.
 
 ## Development Commands
 
@@ -44,6 +44,39 @@ When adding Tailwind customizations, modify `app/globals.css` using the `@theme 
 The project uses Geist Sans and Geist Mono fonts from Google Fonts, loaded via `next/font/google` in the root layout. Font variables are:
 - `--font-geist-sans`
 - `--font-geist-mono`
+
+## Telegram Integration
+
+- `lib/telegram/init.ts` — initializes and expands the WebApp, extracts `initData`
+- `lib/telegram/theme.ts` — maps Telegram theme params to CSS variables on `:root`
+- `lib/telegram/hooks.ts` — `useTelegramWebApp()` and `useTelegramTheme()` hooks
+- `components/providers/TelegramProvider.tsx` — root context provider; consume via `useTelegram()` hook
+
+**Theming:** components use inline `style` props with `var(--tg-theme-*)` CSS variables (e.g., `var(--tg-theme-bg-color)`). The integration gracefully handles non-Telegram environments.
+
+## API Layer
+
+- `lib/api/client.ts` — `ApiClient` class: generic typed fetch wrapper that adds `X-Telegram-Init-Data` auth header
+- `lib/api/services.ts` — service functions using `ApiClient`
+- `types/api.d.ts` — API response types (`ServiceType`, `ServiceTypesResponse`, `ApiError`, etc.)
+- Base URL configured via `NEXT_PUBLIC_API_URL` environment variable
+
+### Data Fetching Pattern
+
+Client components use `useState` + `useEffect` for data fetching:
+1. Get `initData` from `useTelegram()` context
+2. Pass `initData` to API service functions
+3. Handle loading/error states per component using `LoadingSpinner` / `ErrorMessage`
+
+## Component Conventions
+
+- All interactive or data-fetching components require `'use client'` directive
+- Reusable UI primitives live in `components/ui/`
+- Page-specific components in `components/home/` (or per-page directory)
+
+## Environment Variables
+
+- `NEXT_PUBLIC_API_URL` — backend API base URL (required)
 
 ## Code Style
 

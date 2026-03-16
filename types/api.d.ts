@@ -3,6 +3,8 @@ export interface ServiceType {
   cost: number;
   serviceName: string;
   serviceDescription: string;
+  durationOfWork: number;
+  imageUrl: string;
 }
 
 export interface PaginationInfo {

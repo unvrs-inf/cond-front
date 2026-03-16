@@ -9,12 +9,14 @@ import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { ServiceCard } from './ServiceCard';
 
 export function ServiceList() {
-  const { initData } = useTelegram();
+  const { initData, isReady } = useTelegram();
   const [services, setServices] = useState<ServiceType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isReady) return;
+
     async function fetchServices() {
       try {
         setLoading(true);
@@ -23,7 +25,7 @@ export function ServiceList() {
         const response = await getServiceTypes(initData);
         setServices(response.content);
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Не удалось загрузить услуги';
+        const errorMessage = (err as { message?: string }).message || 'Не удалось загрузить услуги';
         setError(errorMessage);
         console.error('Failed to fetch services:', err);
       } finally {
@@ -32,7 +34,7 @@ export function ServiceList() {
     }
 
     fetchServices();
-  }, [initData]);
+  }, [isReady, initData]);
 
   if (loading) {
     return <LoadingSpinner />;
@@ -45,7 +47,7 @@ export function ServiceList() {
   if (services.length === 0) {
     return (
       <div className="text-center py-8">
-        <p style={{ color: 'var(--tg-theme-hint-color)' }}>
+        <p className="text-white/70">
           Услуги не найдены
         </p>
       </div>
@@ -53,10 +55,12 @@ export function ServiceList() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4">
-      {services.map((service) => (
-        <ServiceCard key={service.id} service={service} />
-      ))}
+    <div>
+      <div className="flex gap-4 overflow-x-auto pb-3 -mx-4 px-4">
+        {services.map((service) => (
+          <ServiceCard key={service.id} service={service} />
+        ))}
+      </div>
     </div>
   );
 }
