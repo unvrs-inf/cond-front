@@ -41,9 +41,7 @@ When adding Tailwind customizations, modify `app/globals.css` using the `@theme 
 
 ### Fonts
 
-The project uses Geist Sans and Geist Mono fonts from Google Fonts, loaded via `next/font/google` in the root layout. Font variables are:
-- `--font-geist-sans`
-- `--font-geist-mono`
+The project uses **Open Sans** loaded from local files in `public/fonts/` via `next/font/local`. Three weights are loaded: 300 (Light), 400 (Regular), 500 (Medium). Font CSS variable: `--font-open-sans`. CSS sets: h1–h6 → weight 500, p → 400, a/small → 300.
 
 ## Telegram Integration
 
@@ -51,6 +49,8 @@ The project uses Geist Sans and Geist Mono fonts from Google Fonts, loaded via `
 - `lib/telegram/theme.ts` — maps Telegram theme params to CSS variables on `:root`
 - `lib/telegram/hooks.ts` — `useTelegramWebApp()` and `useTelegramTheme()` hooks
 - `components/providers/TelegramProvider.tsx` — root context provider; consume via `useTelegram()` hook
+- `components/providers/TelegramScript.tsx` — loads `telegram-web-app.js` via Next.js `<Script>` and dispatches a `telegram-loaded` event
+- `types/telegram.d.ts` — global `window.Telegram` type declaration
 
 **Theming:** components use inline `style` props with `var(--tg-theme-*)` CSS variables (e.g., `var(--tg-theme-bg-color)`). The integration gracefully handles non-Telegram environments.
 
@@ -60,6 +60,8 @@ The project uses Geist Sans and Geist Mono fonts from Google Fonts, loaded via `
 - `lib/api/services.ts` — service functions using `ApiClient`
 - `types/api.d.ts` — API response types (`ServiceType`, `ServiceTypesResponse`, `ApiError`, etc.)
 - Base URL configured via `NEXT_PUBLIC_API_URL` environment variable
+
+**Image optimization:** `next.config.ts` whitelists the `NEXT_PUBLIC_API_URL` hostname for Next.js `<Image>` remote optimization. Add new image domains there when needed.
 
 ### Data Fetching Pattern
 
@@ -71,8 +73,17 @@ Client components use `useState` + `useEffect` for data fetching:
 ## Component Conventions
 
 - All interactive or data-fetching components require `'use client'` directive
-- Reusable UI primitives live in `components/ui/`
+- Reusable UI primitives live in `components/ui/` (`LoadingSpinner`, `ErrorMessage`)
 - Page-specific components in `components/home/` (or per-page directory)
+- Layout chrome in `components/layout/` (`Header`, `BottomNavBar`)
+
+### Styling Patterns
+
+- **Glassmorphism:** frosted-glass elements use `backdrop-filter: blur()` with `rgba()` backgrounds (see `Header.tsx`, `BottomNavBar.tsx`)
+- **Safe area insets:** fixed header/nav use `env(safe-area-inset-top/bottom)` for notch/home-bar compensation; `app/page.tsx` adds matching padding to the scroll container
+- **Locale:** monetary values are formatted with `toLocaleString('ru-RU')` and the ruble sign (₽)
+- **Language:** UI text is in Russian; metadata lang is `"ru"`
+- **Image URLs:** `ServiceCard` handles both relative and absolute image URLs — relative URLs are automatically prefixed with `NEXT_PUBLIC_API_URL`
 
 ## Environment Variables
 

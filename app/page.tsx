@@ -1,7 +1,5 @@
 import { Header } from "@/components/layout/Header";
-import { HeroBanner } from "@/components/home/HeroBanner";
-import { ServiceList } from "@/components/home/ServiceList";
-import { BottomNavBar } from "@/components/layout/BottomNavBar";
+import { HomeView } from "@/components/home/HomeView";
 
 export default function Home() {
   return (
@@ -20,15 +18,11 @@ export default function Home() {
       <main
         style={{
           paddingTop: '56px',
-          paddingBottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}
       >
-        <HeroBanner />
-        <section className="p-4">
-          <ServiceList />
-        </section>
+        <HomeView />
       </main>
-      <BottomNavBar />
     </div>
   );
 }

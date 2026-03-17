@@ -8,7 +8,11 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { ServiceCard } from './ServiceCard';
 
-export function ServiceList() {
+interface ServiceListProps {
+  onSelect: (service: ServiceType) => void
+}
+
+export function ServiceList({ onSelect }: ServiceListProps) {
   const { initData, isReady } = useTelegram();
   const [services, setServices] = useState<ServiceType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,9 +60,9 @@ export function ServiceList() {
 
   return (
     <div>
-      <div className="flex gap-4 overflow-x-auto pb-3 -mx-4 px-4">
+      <div className="grid grid-cols-2 gap-4">
         {services.map((service) => (
-          <ServiceCard key={service.id} service={service} />
+          <ServiceCard key={service.id} service={service} onClick={() => onSelect(service)} />
         ))}
       </div>
     </div>

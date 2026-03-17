@@ -13,7 +13,7 @@ export function BottomNavBar() {
         borderColor: 'rgba(255,255,255,0.1)',
       }}
     >
-      <button className="flex flex-col items-center justify-center px-6 py-2 transition-opacity hover:opacity-80">
+      <button className="flex flex-col items-center justify-center px-6 py-2 transition-opacity duration-150 hover:opacity-80 cursor-pointer">
         <Image src="/home.svg" width={28} height={28} alt="Главная" className="mb-1"
           style={{ filter: 'brightness(0) invert(1)' }} />
       </button>

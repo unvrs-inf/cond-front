@@ -1,77 +1,93 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+	--background: #ffffff;
+	--foreground: #171717;
 
-  /* Telegram theme variables with fallback values */
-  --tg-theme-bg-color: #ffffff;
-  --tg-theme-text-color: #000000;
-  --tg-theme-hint-color: #999999;
-  --tg-theme-link-color: #2481cc;
-  --tg-theme-button-color: #2481cc;
-  --tg-theme-button-text-color: #ffffff;
-  --tg-theme-secondary-bg-color: #f4f4f5;
-  --tg-theme-header-bg-color: #ffffff;
-  --tg-theme-bottom-bar-bg-color: #ffffff;
-  --tg-theme-accent-text-color: #2481cc;
-  --tg-theme-section-bg-color: #ffffff;
-  --tg-theme-section-header-text-color: #2481cc;
-  --tg-theme-section-separator-color: #e4e4e7;
-  --tg-theme-subtitle-text-color: #999999;
-  --tg-theme-destructive-text-color: #ef4444;
+	/* Telegram theme variables with fallback values */
+	--tg-theme-bg-color: #ffffff;
+	--tg-theme-text-color: #000000;
+	--tg-theme-hint-color: #999999;
+	--tg-theme-link-color: #2481cc;
+	--tg-theme-button-color: #2481cc;
+	--tg-theme-button-text-color: #ffffff;
+	--tg-theme-secondary-bg-color: #f4f4f5;
+	--tg-theme-header-bg-color: #ffffff;
+	--tg-theme-bottom-bar-bg-color: #ffffff;
+	--tg-theme-accent-text-color: #2481cc;
+	--tg-theme-section-bg-color: #ffffff;
+	--tg-theme-section-header-text-color: #2481cc;
+	--tg-theme-section-separator-color: #e4e4e7;
+	--tg-theme-subtitle-text-color: #999999;
+	--tg-theme-destructive-text-color: #ef4444;
 
-  /* Safe area insets */
-  --tg-safe-area-inset-top: 0px;
-  --tg-safe-area-inset-bottom: 0px;
-  --tg-safe-area-inset-left: 0px;
-  --tg-safe-area-inset-right: 0px;
-  --tg-content-safe-area-inset-top: 0px;
-  --tg-content-safe-area-inset-bottom: 0px;
-  --tg-content-safe-area-inset-left: 0px;
-  --tg-content-safe-area-inset-right: 0px;
+	/* Safe area insets */
+	--tg-safe-area-inset-top: 0px;
+	--tg-safe-area-inset-bottom: 0px;
+	--tg-safe-area-inset-left: 0px;
+	--tg-safe-area-inset-right: 0px;
+	--tg-content-safe-area-inset-top: 0px;
+	--tg-content-safe-area-inset-bottom: 0px;
+	--tg-content-safe-area-inset-left: 0px;
+	--tg-content-safe-area-inset-right: 0px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--font-sans: var(--font-open-sans);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+	:root {
+		--background: #0a0a0a;
+		--foreground: #ededed;
 
-    /* Dark mode fallback values for Telegram theme */
-    --tg-theme-bg-color: #212121;
-    --tg-theme-text-color: #ffffff;
-    --tg-theme-hint-color: #aaaaaa;
-    --tg-theme-link-color: #8774e1;
-    --tg-theme-button-color: #8774e1;
-    --tg-theme-button-text-color: #ffffff;
-    --tg-theme-secondary-bg-color: #181818;
-    --tg-theme-header-bg-color: #212121;
-    --tg-theme-bottom-bar-bg-color: #212121;
-    --tg-theme-accent-text-color: #8774e1;
-    --tg-theme-section-bg-color: #181818;
-    --tg-theme-section-header-text-color: #8774e1;
-    --tg-theme-section-separator-color: #3f3f3f;
-    --tg-theme-subtitle-text-color: #aaaaaa;
-    --tg-theme-destructive-text-color: #ef4444;
-  }
+		/* Dark mode fallback values for Telegram theme */
+		--tg-theme-bg-color: #212121;
+		--tg-theme-text-color: #ffffff;
+		--tg-theme-hint-color: #aaaaaa;
+		--tg-theme-link-color: #8774e1;
+		--tg-theme-button-color: #8774e1;
+		--tg-theme-button-text-color: #ffffff;
+		--tg-theme-secondary-bg-color: #181818;
+		--tg-theme-header-bg-color: #212121;
+		--tg-theme-bottom-bar-bg-color: #212121;
+		--tg-theme-accent-text-color: #8774e1;
+		--tg-theme-section-bg-color: #181818;
+		--tg-theme-section-header-text-color: #8774e1;
+		--tg-theme-section-separator-color: #3f3f3f;
+		--tg-theme-subtitle-text-color: #aaaaaa;
+		--tg-theme-destructive-text-color: #ef4444;
+	}
 }
 
 * {
-  box-sizing: border-box;
+	box-sizing: border-box;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	font-weight: 500;
+}
+
+p {
+	font-weight: 400;
+}
+
+a,
+small {
+	font-weight: 300;
 }
 
 body {
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
-  background: var(--tg-theme-bg-color);
-  color: var(--tg-theme-text-color);
-  font-family: Arial, Helvetica, sans-serif;
+	margin: 0;
+	padding: 0;
+	overflow-x: hidden;
+	background: var(--tg-theme-bg-color);
+	color: var(--tg-theme-text-color);
 }
