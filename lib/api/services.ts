@@ -1,4 +1,4 @@
-import type { ServiceTypesResponse } from '@/types/api';
+import type { ServiceTypesResponse, SchedulesResponse } from '@/types/api';
 import { ApiClient } from './client';
 
 /**
@@ -22,4 +22,19 @@ export async function getServiceTypes(
   });
 
   return client.get<ServiceTypesResponse>(`/typeOfServices?${params.toString()}`);
+}
+
+export async function getSchedules(initData: string): Promise<SchedulesResponse> {
+  const client = new ApiClient(initData);
+  return client.get<SchedulesResponse>('/schedules');
+}
+
+export async function getAvailableSlots(
+  initData: string,
+  serviceId: number,
+  date: string
+): Promise<string[]> {
+  const client = new ApiClient(initData);
+  const params = new URLSearchParams({ serviceId: serviceId.toString(), date });
+  return client.get<string[]>(`/reservations/slots?${params}`);
 }

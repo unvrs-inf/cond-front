@@ -77,9 +77,23 @@ Client components use `useState` + `useEffect` for data fetching:
 - Page-specific components in `components/home/` (or per-page directory)
 - Layout chrome in `components/layout/` (`Header`, `BottomNavBar`)
 
+### In-App Navigation Pattern
+
+`components/home/HomeView.tsx` is the view controller for the home page. It holds `selectedService: ServiceType | null` state. When a service is selected from `ServiceList`, `HomeView` renders `ServiceDetail`; otherwise it renders `HeroBanner` + `ServiceList`. There is **no Next.js router involved** — navigation is pure React state switching within a single route.
+
+### ServiceCard Clip-Path
+
+`ServiceCard.tsx` uses a `ResizeObserver` to dynamically compute a CSS `clip-path` polygon that cuts a notch in the bottom-right corner of the card — the circular icon button sits in this cutout. Before modifying card dimensions or layout, be aware that the clip-path coordinates are recalculated on every resize and depend on the card's measured dimensions.
+
+### Placeholder Components
+
+- **`BottomNavBar`** — currently renders a single home icon button; it is a placeholder pending full multi-tab navigation implementation.
+- **`ServiceDetail` booking form** — has a `showBooking` state that renders a "Форма бронирования (в разработке)" placeholder; the booking flow is not yet implemented.
+
 ### Styling Patterns
 
-- **Glassmorphism:** frosted-glass elements use `backdrop-filter: blur()` with `rgba()` backgrounds (see `Header.tsx`, `BottomNavBar.tsx`)
+- **Glassmorphism:** frosted-glass elements use both `backdrop-filter: blur()` and `-webkit-backdrop-filter: blur()` (both required for WebKit/Safari) with `rgba()` backgrounds (see `Header.tsx`, `BottomNavBar.tsx`)
+- **CTA color:** primary action buttons use yellow `#f5c518`
 - **Safe area insets:** fixed header/nav use `env(safe-area-inset-top/bottom)` for notch/home-bar compensation; `app/page.tsx` adds matching padding to the scroll container
 - **Locale:** monetary values are formatted with `toLocaleString('ru-RU')` and the ruble sign (₽)
 - **Language:** UI text is in Russian; metadata lang is `"ru"`

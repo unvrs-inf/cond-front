@@ -3,6 +3,7 @@
 import type { ServiceType } from '@/types/api'
 import Image from 'next/image'
 import { useState } from 'react'
+import { BookingSlots } from './BookingSlots'
 
 interface ServiceDetailProps {
 	service: ServiceType
@@ -19,24 +20,7 @@ export function ServiceDetail({ service, onBack }: ServiceDetailProps) {
 		: null
 
 	if (showBooking) {
-		return (
-			<div className='flex flex-col items-center justify-center h-full min-h-[60vh] p-8 gap-6'>
-				<p className='text-white text-center text-lg'>
-					Форма бронирования (в разработке)
-				</p>
-				<button
-					onClick={() => setShowBooking(false)}
-					className='px-6 py-3 rounded-2xl text-white font-medium cursor-pointer transition-opacity duration-150 hover:opacity-80'
-					style={{
-						background: 'rgba(255,255,255,0.13)',
-						backdropFilter: 'blur(12px)',
-						WebkitBackdropFilter: 'blur(12px)',
-					}}
-				>
-					Назад
-				</button>
-			</div>
-		)
+		return <BookingSlots service={service} onBack={() => setShowBooking(false)} />
 	}
 
 	return (
@@ -53,7 +37,7 @@ export function ServiceDetail({ service, onBack }: ServiceDetailProps) {
 				}}
 			>
 				{/* Service image — top-right */}
-				<div className='absolute top-0 right-0 w-44 h-36'>
+				<div className='absolute top-0 right-0 w-56 h-48'>
 					{imageSrc ? (
 						<Image
 							src={imageSrc}
@@ -81,7 +65,7 @@ export function ServiceDetail({ service, onBack }: ServiceDetailProps) {
 
 			{/* Description panel */}
 			<div
-				className='rounded-3xl p-4'
+				className='rounded-3xl p-4 mb-4'
 				style={{
 					background: 'rgba(255,255,255,0.13)',
 					backdropFilter: 'blur(12px)',

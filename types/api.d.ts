@@ -24,3 +24,15 @@ export interface ApiError {
   status?: number;
   details?: unknown;
 }
+
+export interface Schedule {
+  id: number;
+  date: string;
+  workBeginning: string;
+  workEnding: string;
+}
+
+export interface SchedulesResponse {
+  content: Schedule[];
+  page: PaginationInfo;
+}
