@@ -36,3 +36,11 @@ export interface SchedulesResponse {
   content: Schedule[];
   page: PaginationInfo;
 }
+
+export interface CreateReservationDto {
+  start: string;
+  serviceId: number;
+  clientName: string;
+  clientPhoneNumber: string;
+  clientAddress: string;
+}

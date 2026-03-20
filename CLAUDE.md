@@ -41,7 +41,7 @@ When adding Tailwind customizations, modify `app/globals.css` using the `@theme 
 
 ### Fonts
 
-The project uses **Open Sans** loaded from local files in `public/fonts/` via `next/font/local`. Three weights are loaded: 300 (Light), 400 (Regular), 500 (Medium). Font CSS variable: `--font-open-sans`. CSS sets: h1–h6 → weight 500, p → 400, a/small → 300.
+The project uses **Open Sans** loaded from local files in `public/fonts/` via `next/font/local`. Three weights are loaded: 300 (Light), 400 (Regular), 500 (Medium). Font CSS variable: `--font-open-sans`. CSS sets: h1–h6 → weight 500, p → 400, a/small → 300. `KumbhSans-Regular.woff2` is present in `public/fonts/` but not yet loaded or used.
 
 ## Telegram Integration
 
@@ -57,8 +57,12 @@ The project uses **Open Sans** loaded from local files in `public/fonts/` via `n
 ## API Layer
 
 - `lib/api/client.ts` — `ApiClient` class: generic typed fetch wrapper that adds `X-Telegram-Init-Data` auth header
-- `lib/api/services.ts` — service functions using `ApiClient`
-- `types/api.d.ts` — API response types (`ServiceType`, `ServiceTypesResponse`, `ApiError`, etc.)
+- `lib/api/services.ts` — service functions using `ApiClient`:
+  - `getServiceTypes(initData)` — fetches available service types
+  - `getSchedules(initData)` — fetches available schedules
+  - `getAvailableSlots(initData, serviceId, date)` — fetches time slots for a given date
+  - `createReservation(initData, dto)` — submits a booking (`CreateReservationDto`: `start`, `serviceId`, `clientName`, `clientPhoneNumber`, `clientAddress`)
+- `types/api.d.ts` — API response types: `ServiceType`, `ServiceTypesResponse`, `Schedule` (`id`, `date`, `workBeginning`, `workEnding`), `SchedulesResponse`, `ApiError`, `CreateReservationDto`, `PaginationInfo` (`size`, `number`, `totalElements`, `totalPages`)
 - Base URL configured via `NEXT_PUBLIC_API_URL` environment variable
 
 **Image optimization:** `next.config.ts` whitelists the `NEXT_PUBLIC_API_URL` hostname for Next.js `<Image>` remote optimization. Add new image domains there when needed.
@@ -87,8 +91,27 @@ Client components use `useState` + `useEffect` for data fetching:
 
 ### Placeholder Components
 
-- **`BottomNavBar`** — currently renders a single home icon button; it is a placeholder pending full multi-tab navigation implementation.
-- **`ServiceDetail` booking form** — has a `showBooking` state that renders a "Форма бронирования (в разработке)" placeholder; the booking flow is not yet implemented.
+- **`BottomNavBar`** — renders a single home icon; placeholder for future multi-tab navigation.
+
+### Booking Flow (full chain)
+
+HomeView → ServiceDetail (`showBooking` state) → BookingSlots (date/slot picker) → BookingForm (address + contact form) → success screen.
+BookingSlots shows `BookingForm` when date and slot are both selected and "Продолжить" is clicked.
+
+### BookingForm and Yandex Maps
+
+`components/home/BookingForm.tsx` collects contact info and address, then calls `createReservation`.
+
+**Inner component pattern:** `MapSection` is defined inside the file and rendered inside `<YMaps>` so it can call `useYMaps(['geocode'])`. Never move map logic outside this `<YMaps>` boundary.
+
+**Address search flow:**
+1. Debounced (300 ms) `ymaps.geocode(text)` call builds the dropdown
+2. Coordinates are extracted via `obj.geometry?.getCoordinates?.()` at search time — objects without coordinates are skipped
+3. On select, `item.coords` is used directly (no second `getCoordinates()` call)
+
+**Zone validation:** `pointInPolygon()` (pure JS ray-casting, module-level function in BookingForm.tsx) validates that the chosen point is within `ZONE_COORDS`. Do NOT replace this with `ymaps.geometry.Polygon.contains()` — that API uses pixel coordinates and is unreliable for geographic data.
+
+**`<YMaps>` config:** loaded with `query={{ apikey: NEXT_PUBLIC_YANDEX_MAPS_API_KEY, load: 'package.full' }}`. The `load: 'package.full'` is required for geocoding to work.
 
 ### Styling Patterns
 
@@ -102,6 +125,7 @@ Client components use `useState` + `useEffect` for data fetching:
 ## Environment Variables
 
 - `NEXT_PUBLIC_API_URL` — backend API base URL (required)
+- `NEXT_PUBLIC_YANDEX_MAPS_API_KEY` — Yandex Maps API key; used in `BookingForm.tsx` via `<YMaps query={{ apikey }}>`.
 
 ## Code Style
 

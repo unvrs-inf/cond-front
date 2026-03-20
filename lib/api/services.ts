@@ -1,4 +1,4 @@
-import type { ServiceTypesResponse, SchedulesResponse } from '@/types/api';
+import type { ServiceTypesResponse, SchedulesResponse, CreateReservationDto } from '@/types/api';
 import { ApiClient } from './client';
 
 /**
@@ -37,4 +37,12 @@ export async function getAvailableSlots(
   const client = new ApiClient(initData);
   const params = new URLSearchParams({ serviceId: serviceId.toString(), date });
   return client.get<string[]>(`/reservations/slots?${params}`);
+}
+
+export async function createReservation(
+  initData: string,
+  data: CreateReservationDto
+): Promise<void> {
+  const client = new ApiClient(initData);
+  return client.post('/reservations/slot', data);
 }
