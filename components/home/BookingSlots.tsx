@@ -123,7 +123,7 @@ export function BookingSlots({ service, onBack }: BookingSlotsProps) {
 					) : slots.length === 0 ? (
 						<p className='text-white/50 text-sm'>Нет доступных слотов</p>
 					) : (
-						<div className='grid grid-cols-3 gap-2'>
+						<div className='grid grid-cols-3 gap-2 mb-6'>
 							{slots.map(slot => {
 								const isSelected = selectedSlot === slot
 								return (

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import type { AdminReservation, AdminReservationsResponse } from '@/types/api'
+import type { AdminReservation, AdminReservationsResponse, Schedule, CreateScheduleDto } from '@/types/api'
 import { useTelegram } from '@/components/providers/TelegramProvider'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
@@ -13,15 +13,20 @@ import {
   completeReservation,
   cancelReservation,
   confirmReservation,
+  getSchedules,
+  createSchedule,
+  deleteSchedule,
+  updateSchedule,
 } from '@/lib/api/services'
 
-type Tab = 'active' | 'created' | 'cancelled' | 'completed'
+type Tab = 'active' | 'created' | 'cancelled' | 'completed' | 'schedules'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'active', label: 'Активные' },
   { id: 'created', label: 'Созданные' },
   { id: 'cancelled', label: 'Отменённые' },
   { id: 'completed', label: 'Выполненные' },
+  { id: 'schedules', label: 'Расписание' },
 ]
 
 function formatDateTime(dt: string): string {
@@ -164,6 +169,250 @@ function ReservationCard({ reservation, tab, initData, onUpdate, onRemove }: Res
   )
 }
 
+interface ScheduleCardProps {
+  schedule: Schedule
+  initData: string
+  onRemove: (id: number) => void
+  onUpdate: (updated: Schedule) => void
+}
+
+function ScheduleCard({ schedule, initData, onRemove, onUpdate }: ScheduleCardProps) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [editing, setEditing] = useState(false)
+  const [editDate, setEditDate] = useState(schedule.date)
+  const [editBeginning, setEditBeginning] = useState(schedule.workBeginning.slice(0, 5))
+  const [editEnding, setEditEnding] = useState(schedule.workEnding.slice(0, 5))
+
+  const inputStyle = {
+    background: 'rgba(255,255,255,0.1)',
+    color: 'white',
+    borderRadius: 12,
+    border: '1px solid rgba(255,255,255,0.15)',
+    padding: '8px 12px',
+    width: '100%',
+    fontSize: '0.875rem',
+    colorScheme: 'dark' as const,
+  }
+
+  async function handleDelete() {
+    setLoading(true)
+    setError(null)
+    try {
+      await deleteSchedule(initData, schedule.id)
+      onRemove(schedule.id)
+    } catch {
+      setError('Ошибка при удалении')
+      setLoading(false)
+    }
+  }
+
+  async function handleSave() {
+    setLoading(true)
+    setError(null)
+    try {
+      const updated = await updateSchedule(initData, schedule.id, {
+        date: editDate,
+        workBeginning: editBeginning,
+        workEnding: editEnding,
+      })
+      onUpdate(updated)
+      setEditing(false)
+    } catch {
+      setError('Ошибка при сохранении')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div
+      className='rounded-2xl p-4 mb-3'
+      style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+    >
+      <div className='flex items-center justify-between mb-1'>
+        <span className='text-sm font-medium' style={{ color: '#f5c518' }}>
+          {editing ? editDate : schedule.date}
+        </span>
+        <span className='text-xs' style={{ color: 'rgba(255,255,255,0.6)' }}>
+          #{schedule.id}
+        </span>
+      </div>
+      {editing ? (
+        <div className='space-y-3 mb-3'>
+          <div>
+            <label className='block text-xs mb-1' style={{ color: 'rgba(255,255,255,0.6)' }}>Дата</label>
+            <input
+              type='date'
+              value={editDate}
+              onChange={e => setEditDate(e.target.value)}
+              style={inputStyle}
+            />
+          </div>
+          <div>
+            <label className='block text-xs mb-1' style={{ color: 'rgba(255,255,255,0.6)' }}>Начало работы</label>
+            <input
+              type='time'
+              value={editBeginning}
+              onChange={e => setEditBeginning(e.target.value)}
+              style={inputStyle}
+            />
+          </div>
+          <div>
+            <label className='block text-xs mb-1' style={{ color: 'rgba(255,255,255,0.6)' }}>Конец работы</label>
+            <input
+              type='time'
+              value={editEnding}
+              onChange={e => setEditEnding(e.target.value)}
+              style={inputStyle}
+            />
+          </div>
+        </div>
+      ) : (
+        <div className='text-xs mb-3' style={{ color: 'rgba(255,255,255,0.7)' }}>
+          {schedule.workBeginning.slice(0, 5)} — {schedule.workEnding.slice(0, 5)}
+        </div>
+      )}
+      {error && <p className='text-xs text-red-400 mb-2'>{error}</p>}
+      {editing ? (
+        <div className='flex gap-2'>
+          <button
+            onClick={handleSave}
+            disabled={loading}
+            className='flex-1 py-1.5 rounded-xl text-sm font-medium disabled:opacity-50'
+            style={{ background: '#f5c518', color: '#1a1a1a' }}
+          >
+            {loading ? '...' : 'Сохранить'}
+          </button>
+          <button
+            onClick={() => { setEditing(false); setError(null) }}
+            disabled={loading}
+            className='flex-1 py-1.5 rounded-xl text-sm font-medium disabled:opacity-50'
+            style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)' }}
+          >
+            Отмена
+          </button>
+        </div>
+      ) : (
+        <div className='flex gap-2'>
+          <button
+            onClick={() => setEditing(true)}
+            disabled={loading}
+            className='flex-1 py-1.5 rounded-xl text-sm font-medium disabled:opacity-50'
+            style={{ background: '#f5c518', color: '#1a1a1a' }}
+          >
+            Изменить
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={loading}
+            className='flex-1 py-1.5 rounded-xl text-sm font-medium disabled:opacity-50'
+            style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)' }}
+          >
+            {loading ? '...' : 'Удалить'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface AddScheduleFormProps {
+  initData: string
+  onAdd: (schedule: Schedule) => void
+  onCancel: () => void
+}
+
+function AddScheduleForm({ initData, onAdd, onCancel }: AddScheduleFormProps) {
+  const today = new Date().toISOString().split('T')[0]
+  const [date, setDate] = useState(today)
+  const [workBeginning, setWorkBeginning] = useState('09:00')
+  const [workEnding, setWorkEnding] = useState('18:00')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const inputStyle = {
+    background: 'rgba(255,255,255,0.1)',
+    color: 'white',
+    borderRadius: 12,
+    border: '1px solid rgba(255,255,255,0.15)',
+    padding: '8px 12px',
+    width: '100%',
+    fontSize: '0.875rem',
+    colorScheme: 'dark' as const,
+  }
+
+  async function handleSave() {
+    setLoading(true)
+    setError(null)
+    try {
+      const dto: CreateScheduleDto = { date, workBeginning, workEnding }
+      const created = await createSchedule(initData, dto)
+      onAdd(created)
+    } catch {
+      setError('Ошибка при сохранении')
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div
+      className='rounded-2xl p-4 mb-3'
+      style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+    >
+      <div className='space-y-3 mb-3'>
+        <div>
+          <label className='block text-xs mb-1' style={{ color: 'rgba(255,255,255,0.6)' }}>Дата</label>
+          <input
+            type='date'
+            value={date}
+            min={today}
+            onChange={e => setDate(e.target.value)}
+            style={inputStyle}
+          />
+        </div>
+        <div>
+          <label className='block text-xs mb-1' style={{ color: 'rgba(255,255,255,0.6)' }}>Начало работы</label>
+          <input
+            type='time'
+            value={workBeginning}
+            onChange={e => setWorkBeginning(e.target.value)}
+            style={inputStyle}
+          />
+        </div>
+        <div>
+          <label className='block text-xs mb-1' style={{ color: 'rgba(255,255,255,0.6)' }}>Конец работы</label>
+          <input
+            type='time'
+            value={workEnding}
+            onChange={e => setWorkEnding(e.target.value)}
+            style={inputStyle}
+          />
+        </div>
+      </div>
+      {error && <p className='text-xs text-red-400 mb-2'>{error}</p>}
+      <div className='flex gap-2'>
+        <button
+          onClick={handleSave}
+          disabled={loading}
+          className='flex-1 py-1.5 rounded-xl text-sm font-medium disabled:opacity-50'
+          style={{ background: '#f5c518', color: '#1a1a1a' }}
+        >
+          {loading ? '...' : 'Сохранить'}
+        </button>
+        <button
+          onClick={onCancel}
+          disabled={loading}
+          className='flex-1 py-1.5 rounded-xl text-sm font-medium disabled:opacity-50'
+          style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)' }}
+        >
+          Отмена
+        </button>
+      </div>
+    </div>
+  )
+}
+
 interface AdminPanelProps {
   onClose: () => void
 }
@@ -175,8 +424,13 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const [schedules, setSchedules] = useState<Schedule[]>([])
+  const [schedulesLoading, setSchedulesLoading] = useState(false)
+  const [schedulesError, setSchedulesError] = useState<string | null>(null)
+  const [showAddForm, setShowAddForm] = useState(false)
+
   const fetchReservations = useCallback(async () => {
-    if (!isReady) return
+    if (!isReady || activeTab === 'schedules') return
     setLoading(true)
     setError(null)
     try {
@@ -193,9 +447,27 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     }
   }, [activeTab, initData, isReady])
 
+  const fetchSchedules = useCallback(async () => {
+    if (!isReady || activeTab !== 'schedules') return
+    setSchedulesLoading(true)
+    setSchedulesError(null)
+    try {
+      const response = await getSchedules(initData)
+      setSchedules(response.content)
+    } catch {
+      setSchedulesError('Не удалось загрузить расписание')
+    } finally {
+      setSchedulesLoading(false)
+    }
+  }, [activeTab, initData, isReady])
+
   useEffect(() => {
     fetchReservations()
   }, [fetchReservations])
+
+  useEffect(() => {
+    fetchSchedules()
+  }, [fetchSchedules])
 
   function handleUpdate(updated: AdminReservation) {
     setReservations(prev => prev.map(r => (r.id === updated.id ? updated : r)))
@@ -203,6 +475,19 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 
   function handleRemove(id: number) {
     setReservations(prev => prev.filter(r => r.id !== id))
+  }
+
+  function handleScheduleRemove(id: number) {
+    setSchedules(prev => prev.filter(s => s.id !== id))
+  }
+
+  function handleScheduleAdd(schedule: Schedule) {
+    setSchedules(prev => [...prev, schedule])
+    setShowAddForm(false)
+  }
+
+  function handleScheduleUpdate(updated: Schedule) {
+    setSchedules(prev => prev.map(s => s.id === updated.id ? updated : s))
   }
 
   return (
@@ -252,27 +537,68 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 
       {/* Content */}
       <div className='flex-1 overflow-y-auto px-4 py-3'>
-        {loading && (
-          <div className='flex justify-center py-8'>
-            <LoadingSpinner />
-          </div>
+        {activeTab === 'schedules' ? (
+          <>
+            <button
+              onClick={() => setShowAddForm(v => !v)}
+              className='w-full py-2 rounded-xl text-sm font-medium mb-3'
+              style={{ background: '#f5c518', color: '#1a1a1a' }}
+            >
+              Добавить расписание
+            </button>
+            {showAddForm && (
+              <AddScheduleForm
+                initData={initData}
+                onAdd={handleScheduleAdd}
+                onCancel={() => setShowAddForm(false)}
+              />
+            )}
+            {schedulesLoading && (
+              <div className='flex justify-center py-8'>
+                <LoadingSpinner />
+              </div>
+            )}
+            {!schedulesLoading && schedulesError && <ErrorMessage message={schedulesError} />}
+            {!schedulesLoading && !schedulesError && schedules.length === 0 && (
+              <p className='text-center py-8 text-sm' style={{ color: 'rgba(255,255,255,0.5)' }}>
+                Нет расписаний
+              </p>
+            )}
+            {!schedulesLoading && !schedulesError && schedules.map(s => (
+              <ScheduleCard
+                key={s.id}
+                schedule={s}
+                initData={initData}
+                onRemove={handleScheduleRemove}
+                onUpdate={handleScheduleUpdate}
+              />
+            ))}
+          </>
+        ) : (
+          <>
+            {loading && (
+              <div className='flex justify-center py-8'>
+                <LoadingSpinner />
+              </div>
+            )}
+            {!loading && error && <ErrorMessage message={error} />}
+            {!loading && !error && reservations.length === 0 && (
+              <p className='text-center py-8 text-sm' style={{ color: 'rgba(255,255,255,0.5)' }}>
+                Нет записей
+              </p>
+            )}
+            {!loading && !error && reservations.map(r => (
+              <ReservationCard
+                key={r.id}
+                reservation={r}
+                tab={activeTab}
+                initData={initData}
+                onUpdate={handleUpdate}
+                onRemove={handleRemove}
+              />
+            ))}
+          </>
         )}
-        {!loading && error && <ErrorMessage message={error} />}
-        {!loading && !error && reservations.length === 0 && (
-          <p className='text-center py-8 text-sm' style={{ color: 'rgba(255,255,255,0.5)' }}>
-            Нет записей
-          </p>
-        )}
-        {!loading && !error && reservations.map(r => (
-          <ReservationCard
-            key={r.id}
-            reservation={r}
-            tab={activeTab}
-            initData={initData}
-            onUpdate={handleUpdate}
-            onRemove={handleRemove}
-          />
-        ))}
       </div>
     </div>
   )

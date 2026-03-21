@@ -37,6 +37,12 @@ export interface SchedulesResponse {
   page: PaginationInfo;
 }
 
+export interface CreateScheduleDto {
+  date: string;
+  workBeginning: string;
+  workEnding: string;
+}
+
 export interface CreateReservationDto {
   start: string;
   serviceId: number;
