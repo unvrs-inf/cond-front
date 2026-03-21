@@ -95,6 +95,16 @@ export class ApiClient {
   }
 
   /**
+   * Makes a PATCH request
+   */
+  async patch<T>(endpoint: string, data?: unknown): Promise<T> {
+    return this.fetch<T>(endpoint, {
+      method: 'PATCH',
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
+
+  /**
    * Makes a DELETE request
    */
   async delete<T>(endpoint: string): Promise<T> {

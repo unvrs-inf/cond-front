@@ -1,4 +1,4 @@
-import type { ServiceTypesResponse, SchedulesResponse, CreateReservationDto } from '@/types/api';
+import type { ServiceTypesResponse, SchedulesResponse, CreateReservationDto, UserInfoDto, AdminReservation, AdminReservationsResponse } from '@/types/api';
 import { ApiClient } from './client';
 
 /**
@@ -45,4 +45,36 @@ export async function createReservation(
 ): Promise<void> {
   const client = new ApiClient(initData);
   return client.post('/reservations/slot', data);
+}
+
+export async function getUserInfo(initData: string): Promise<UserInfoDto> {
+  return new ApiClient(initData).get<UserInfoDto>('/rest/admin-ui/clients/me');
+}
+
+export async function getActiveReservations(initData: string): Promise<AdminReservationsResponse> {
+  return new ApiClient(initData).get('/rest/admin-ui/reservations/active');
+}
+
+export async function getCreatedReservations(initData: string): Promise<AdminReservationsResponse> {
+  return new ApiClient(initData).get('/rest/admin-ui/reservations/created');
+}
+
+export async function getCancelledReservations(initData: string): Promise<AdminReservationsResponse> {
+  return new ApiClient(initData).get('/rest/admin-ui/reservations/cancelled');
+}
+
+export async function getCompletedReservations(initData: string): Promise<AdminReservationsResponse> {
+  return new ApiClient(initData).get('/rest/admin-ui/reservations/completed');
+}
+
+export async function completeReservation(initData: string, id: number): Promise<AdminReservation> {
+  return new ApiClient(initData).patch(`/rest/admin-ui/reservations/${id}/complete`);
+}
+
+export async function cancelReservation(initData: string, id: number): Promise<AdminReservation> {
+  return new ApiClient(initData).patch(`/rest/admin-ui/reservations/${id}/cancel`);
+}
+
+export async function confirmReservation(initData: string, id: number): Promise<AdminReservation> {
+  return new ApiClient(initData).patch(`/rest/admin-ui/reservations/${id}/confirm`);
 }

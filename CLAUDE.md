@@ -58,11 +58,16 @@ The project uses **Open Sans** loaded from local files in `public/fonts/` via `n
 
 - `lib/api/client.ts` — `ApiClient` class: generic typed fetch wrapper that adds `X-Telegram-Init-Data` auth header
 - `lib/api/services.ts` — service functions using `ApiClient`:
-  - `getServiceTypes(initData)` — fetches available service types
+  - `getServiceTypes(initData, page?, size?)` — fetches available service types (paginated, defaults: page=0, size=20)
   - `getSchedules(initData)` — fetches available schedules
   - `getAvailableSlots(initData, serviceId, date)` — fetches time slots for a given date
   - `createReservation(initData, dto)` — submits a booking (`CreateReservationDto`: `start`, `serviceId`, `clientName`, `clientPhoneNumber`, `clientAddress`)
-- `types/api.d.ts` — API response types: `ServiceType`, `ServiceTypesResponse`, `Schedule` (`id`, `date`, `workBeginning`, `workEnding`), `SchedulesResponse`, `ApiError`, `CreateReservationDto`, `PaginationInfo` (`size`, `number`, `totalElements`, `totalPages`)
+  - `getUserInfo(initData)` — GET /rest/admin-ui/clients/me; returns `UserInfoDto` (`id`, `name`, `isAdmin`)
+  - `getActiveReservations(initData)` / `getCreatedReservations` / `getCancelledReservations` / `getCompletedReservations` — GET admin reservation lists
+  - `completeReservation(initData, id)` — PATCH .../complete
+  - `cancelReservation(initData, id)` — PATCH .../cancel
+  - `confirmReservation(initData, id)` — PATCH .../confirm
+- `types/api.d.ts` — API response types: `ServiceType`, `ServiceTypesResponse`, `Schedule` (`id`, `date`, `workBeginning`, `workEnding`), `SchedulesResponse`, `ApiError`, `CreateReservationDto`, `PaginationInfo` (`size`, `number`, `totalElements`, `totalPages`), `UserInfoDto` (`id`, `name`, `isAdmin`), `AdminReservation` (with nested `typeOfService`, `client`), `AdminReservationsResponse`
 - Base URL configured via `NEXT_PUBLIC_API_URL` environment variable
 
 **Image optimization:** `next.config.ts` whitelists the `NEXT_PUBLIC_API_URL` hostname for Next.js `<Image>` remote optimization. Add new image domains there when needed.
@@ -70,9 +75,10 @@ The project uses **Open Sans** loaded from local files in `public/fonts/` via `n
 ### Data Fetching Pattern
 
 Client components use `useState` + `useEffect` for data fetching:
-1. Get `initData` from `useTelegram()` context
-2. Pass `initData` to API service functions
-3. Handle loading/error states per component using `LoadingSpinner` / `ErrorMessage`
+1. Get `initData` and `isReady` from `useTelegram()` context
+2. Gate the `useEffect` on `isReady` (and include it in the dependency array) to avoid firing before Telegram initialises
+3. Pass `initData` to API service functions
+4. Handle loading/error states per component using `LoadingSpinner` / `ErrorMessage`
 
 ## Component Conventions
 
@@ -83,7 +89,7 @@ Client components use `useState` + `useEffect` for data fetching:
 
 ### In-App Navigation Pattern
 
-`components/home/HomeView.tsx` is the view controller for the home page. It holds `selectedService: ServiceType | null` state. When a service is selected from `ServiceList`, `HomeView` renders `ServiceDetail`; otherwise it renders `HeroBanner` + `ServiceList`. There is **no Next.js router involved** — navigation is pure React state switching within a single route.
+`components/home/HomeView.tsx` is the view controller for the home page. It holds `selected: ServiceType | null` state. When a service is selected from `ServiceList`, `HomeView` renders `ServiceDetail`; otherwise it renders `HeroBanner` + `ServiceList`. There is **no Next.js router involved** — navigation is pure React state switching within a single route.
 
 ### ServiceCard Clip-Path
 
@@ -97,6 +103,20 @@ Client components use `useState` + `useEffect` for data fetching:
 
 HomeView → ServiceDetail (`showBooking` state) → BookingSlots (date/slot picker) → BookingForm (address + contact form) → success screen.
 BookingSlots shows `BookingForm` when date and slot are both selected and "Продолжить" is clicked.
+
+### Admin Panel
+
+`components/admin/AdminButton.tsx` — floating gear icon button (bottom-right, z-40), visible only to admins.
+`components/admin/AdminPanel.tsx` — full-screen modal overlay with four tabs: "Активные", "Созданные", "Отменённые", "Выполненные". Fetches reservations per tab on tab change.
+
+**Access control:** `HomeView` calls `getUserInfo()` on mount; if `user.isAdmin === true`, renders `AdminButton` and `AdminPanel`. Errors are silently ignored (non-admins get no button).
+
+**ReservationCard (nested in AdminPanel):** shows id, service name, status, start/end times (ru-RU locale), client username + Telegram ID, phone (clipboard copy in Telegram, `tel:` link otherwise), address (links to Yandex Maps). Action buttons vary by tab:
+- Created: "Подтвердить", "Отменить"
+- Active: "Выполнить", "Отменить"
+- Cancelled/Completed: display-only
+
+**State in HomeView:** `isAdmin: boolean` + `adminOpen: boolean`.
 
 ### BookingForm and Yandex Maps
 
