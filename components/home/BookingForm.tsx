@@ -10,7 +10,7 @@ import {
 	useYMaps,
 	YMaps,
 } from '@pbe/react-yandex-maps'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 // Zone polygon coordinates [lat, lon] — Yandex Maps format
 const ZONE_COORDS: [number, number][] = [
@@ -132,6 +132,13 @@ function MapSection({
 	>([]) // eslint-disable-line @typescript-eslint/no-explicit-any
 	const [showResults, setShowResults] = useState(false)
 	const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+	const requestCounterRef = useRef(0)
+
+	useEffect(() => {
+		return () => {
+			if (searchTimeout.current) clearTimeout(searchTimeout.current)
+		}
+	}, [])
 
 	const resolveAddress = useCallback(
 		async (coords: [number, number]) => {
@@ -169,12 +176,14 @@ function MapSection({
 			setShowResults(false)
 			return
 		}
+		const myRequestId = ++requestCounterRef.current
 		searchTimeout.current = setTimeout(async () => {
 			try {
 				const res = await ymaps.geocode(value, {
 					results: 5,
 					boundedBy: ZONE_BOUNDS,
 				})
+				if (myRequestId !== requestCounterRef.current) return
 				const count = res.geoObjects.getLength()
 				const items: {
 					display: string
@@ -191,6 +200,7 @@ function MapSection({
 				setSearchResults(items)
 				setShowResults(true)
 			} catch {
+				if (myRequestId !== requestCounterRef.current) return
 				setSearchResults([])
 			}
 		}, 300)
@@ -206,7 +216,7 @@ function MapSection({
 		setShowResults(false)
 		setSearchResults([])
 		if (!pointInPolygon(item.coords, ZONE_COORDS)) {
-			onAddressError('Адрес вне зоны обслуживания')
+			onAddressError('Адрес вне зоны доставки')
 			return
 		}
 		const city =
@@ -258,6 +268,7 @@ function MapSection({
 							<div
 								key={i}
 								onMouseDown={() => handleResultSelect(item)}
+								onTouchStart={e => { e.preventDefault(); handleResultSelect(item) }}
 								style={{
 									padding: '10px 14px',
 									color: '#fff',
@@ -374,7 +385,11 @@ export function BookingForm({
 	function validate(): boolean {
 		const errs: FieldErrors = {}
 		if (!fields.name.trim()) errs.name = 'Обязательное поле'
-		if (!fields.phone.trim()) errs.phone = 'Обязательное поле'
+		if (!fields.phone.trim()) {
+			errs.phone = 'Обязательное поле'
+		} else if (!/^\+?[78]\d{10}$/.test(fields.phone.replace(/[\s\-()]/g, ''))) {
+			errs.phone = 'Введите корректный номер телефона'
+		}
 		if (!fields.city.trim()) errs.city = 'Выберите адрес на карте'
 		if (!fields.street.trim()) errs.street = 'Выберите адрес на карте'
 		if (!fields.building.trim()) errs.building = 'Укажите номер дома'

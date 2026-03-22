@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { AdminReservation, AdminReservationsResponse, Schedule, CreateScheduleDto } from '@/types/api'
 import { useTelegram } from '@/components/providers/TelegramProvider'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
@@ -44,7 +44,8 @@ function formatDateTime(dt: string): string {
 }
 
 function formatScheduleDate(dateStr: string): string {
-  const date = new Date(dateStr + 'T00:00:00')
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const date = new Date(year, month - 1, day)
   return date.toLocaleDateString('ru-RU', {
     weekday: 'short',
     day: '2-digit',
@@ -66,6 +67,7 @@ function ReservationCard({ reservation, tab, initData, onUpdate, onRemove }: Res
   const [error, setError] = useState<string | null>(null)
   const [copiedPhone, setCopiedPhone] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   async function handleAction(action: 'complete' | 'cancel' | 'confirm') {
     setLoading(true)
@@ -118,7 +120,8 @@ function ReservationCard({ reservation, tab, initData, onUpdate, onRemove }: Res
                 e.preventDefault()
                 navigator.clipboard.writeText(reservation.clientPhoneNumber).then(() => {
                   setCopiedPhone(true)
-                  setTimeout(() => setCopiedPhone(false), 2000)
+                  clearTimeout(copiedTimerRef.current)
+                  copiedTimerRef.current = setTimeout(() => setCopiedPhone(false), 2000)
                 })
               }
             }}
@@ -462,6 +465,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     if (!isReady || activeTab === 'schedules') return
     setLoading(true)
     setError(null)
+    setReservations([])
     try {
       let response: AdminReservationsResponse
       if (activeTab === 'active') response = await getActiveReservations(initData)

@@ -28,7 +28,7 @@ function formatSlot(slot: string): string {
 }
 
 export function BookingSlots({ service, onBack, onGoHome }: BookingSlotsProps) {
-	const { initData } = useTelegram()
+	const { initData, isReady } = useTelegram()
 	const [schedules, setSchedules] = useState<Schedule[]>([])
 	const [selectedDate, setSelectedDate] = useState<string | null>(null)
 	const [slots, setSlots] = useState<string[]>([])
@@ -39,6 +39,7 @@ export function BookingSlots({ service, onBack, onGoHome }: BookingSlotsProps) {
 	const [showForm, setShowForm] = useState(false)
 
 	useEffect(() => {
+		if (!isReady) return
 		async function fetchSchedules() {
 			try {
 				const data = await getSchedules(initData)
@@ -50,7 +51,7 @@ export function BookingSlots({ service, onBack, onGoHome }: BookingSlotsProps) {
 			}
 		}
 		fetchSchedules()
-	}, [initData])
+	}, [initData, isReady])
 
 	async function handleDaySelect(date: string) {
 		setSelectedDate(date)

@@ -25,7 +25,10 @@ export function HomeView() {
   }, [isReady, initData])
 
   useEffect(() => {
-    const handler = () => setSelected(null)
+    const handler = () => {
+      setSelected(null)
+      setAdminOpen(false)
+    }
     window.addEventListener('goHome', handler)
     return () => window.removeEventListener('goHome', handler)
   }, [])

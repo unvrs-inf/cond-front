@@ -26,8 +26,14 @@ export function ServiceList({ onSelect }: ServiceListProps) {
 				setLoading(true)
 				setError(null)
 
-				const response = await getServiceTypes(initData)
-				setServices(response.content)
+				const firstPage = await getServiceTypes(initData, 0, 50)
+				let all = [...firstPage.content]
+				const totalPages = firstPage.page.totalPages
+				for (let page = 1; page < totalPages; page++) {
+					const next = await getServiceTypes(initData, page, 50)
+					all = [...all, ...next.content]
+				}
+				setServices(all)
 			} catch (err) {
 				const errorMessage =
 					(err as { message?: string }).message || 'Не удалось загрузить услуги'

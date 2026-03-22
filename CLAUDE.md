@@ -17,138 +17,130 @@ This is a **Telegram Mini App** for air conditioning maintenance services, built
 
 ### App Router Structure
 
-This project uses Next.js App Router (not Pages Router). All routes are defined in the `app/` directory:
+Next.js App Router (not Pages Router). All routes are in `app/`:
 - `app/layout.tsx` - Root layout with global fonts and metadata
 - `app/page.tsx` - Home page component
 - `app/globals.css` - Global styles and Tailwind configuration
 
 ### Tailwind CSS v4
 
-This project uses **Tailwind CSS v4**, which has a different configuration approach than v3:
-
-- **No `tailwind.config.js` file** - Configuration is done via CSS
-- Tailwind is imported directly in `app/globals.css` with `@import "tailwindcss"`
-- Theme customization uses inline `@theme` directive in CSS
-- Custom CSS properties (e.g., `--background`, `--foreground`) are defined in `:root` and referenced in the theme
-
-When adding Tailwind customizations, modify `app/globals.css` using the `@theme inline` block, not a config file.
+**No `tailwind.config.js`** — configuration is done via CSS. Tailwind is imported in `app/globals.css` with `@import "tailwindcss"`. Theme customization uses the `@theme inline` directive in that file.
 
 ### TypeScript Configuration
 
-- Path alias `@/*` maps to the root directory (use `@/app/...`, `@/components/...`, etc.)
-- Strict mode enabled
-- JSX transform set to `react-jsx` (automatic runtime)
+- Path alias `@/*` maps to the root directory
+- Strict mode enabled; `JSX` transform is `react-jsx`
 
 ### Fonts
 
-The project uses **Open Sans** loaded from local files in `public/fonts/` via `next/font/local`. Three weights are loaded: 300 (Light), 400 (Regular), 500 (Medium). Font CSS variable: `--font-open-sans`. CSS sets: h1–h6 → weight 500, p → 400, a/small → 300. `KumbhSans-Regular.woff2` is present in `public/fonts/` but not yet loaded or used.
+**Nunito** loaded from `public/fonts/` via `next/font/local`. Three weights: 400, 500, 600. CSS variable: `--font-nunito`. `KumbhSans-Regular.woff2` is present but not yet wired up.
 
 ## Telegram Integration
 
 - `lib/telegram/init.ts` — initializes and expands the WebApp, extracts `initData`
 - `lib/telegram/theme.ts` — maps Telegram theme params to CSS variables on `:root`
 - `lib/telegram/hooks.ts` — `useTelegramWebApp()` and `useTelegramTheme()` hooks
-- `components/providers/TelegramProvider.tsx` — root context provider; consume via `useTelegram()` hook
-- `components/providers/TelegramScript.tsx` — loads `telegram-web-app.js` via Next.js `<Script>` and dispatches a `telegram-loaded` event
+- `components/providers/TelegramProvider.tsx` — root context provider; consume via `useTelegram()`. Uses **two-phase init**: immediate init for native injection, then falls back to `telegram-loaded` event from `TelegramScript`
+- `components/providers/TelegramScript.tsx` — loads `telegram-web-app.js` via Next.js `<Script>`
 - `types/telegram.d.ts` — global `window.Telegram` type declaration
 
-**Theming:** components use inline `style` props with `var(--tg-theme-*)` CSS variables (e.g., `var(--tg-theme-bg-color)`). The integration gracefully handles non-Telegram environments.
+**Theming:** components use inline `style` props with `var(--tg-theme-*)` CSS variables. Provide fallback values: `var(--tg-theme-button-color, #f5c518)` — the CSS variable may not exist outside Telegram.
 
 ## API Layer
 
-- `lib/api/client.ts` — `ApiClient` class: generic typed fetch wrapper that adds `X-Telegram-Init-Data` auth header
-- `lib/api/services.ts` — service functions using `ApiClient`:
-  - `getServiceTypes(initData, page?, size?)` — fetches available service types (paginated, defaults: page=0, size=20)
-  - `getSchedules(initData)` — fetches available schedules
-  - `getAvailableSlots(initData, serviceId, date)` — fetches time slots for a given date
-  - `createReservation(initData, dto)` — submits a booking (`CreateReservationDto`: `start`, `serviceId`, `clientName`, `clientPhoneNumber`, `clientAddress`)
-  - `getUserInfo(initData)` — GET /rest/admin-ui/clients/me; returns `UserInfoDto` (`id`, `name`, `isAdmin`)
-  - `getActiveReservations(initData)` / `getCreatedReservations` / `getCancelledReservations` / `getCompletedReservations` — GET admin reservation lists
-  - `completeReservation(initData, id)` — PATCH .../complete
-  - `cancelReservation(initData, id)` — PATCH .../cancel
-  - `confirmReservation(initData, id)` — PATCH .../confirm
-- `types/api.d.ts` — API response types: `ServiceType`, `ServiceTypesResponse`, `Schedule` (`id`, `date`, `workBeginning`, `workEnding`), `SchedulesResponse`, `ApiError`, `CreateReservationDto`, `PaginationInfo` (`size`, `number`, `totalElements`, `totalPages`), `UserInfoDto` (`id`, `name`, `isAdmin`), `AdminReservation` (with nested `typeOfService`, `client`), `AdminReservationsResponse`
-- Base URL configured via `NEXT_PUBLIC_API_URL` environment variable
+- `lib/api/client.ts` — `ApiClient` class: generic typed fetch wrapper, adds `X-Telegram-Init-Data` auth header, **30-second AbortController timeout** (throws `'Превышено время ожидания запроса'` on abort)
+- `lib/api/services.ts` — service functions:
+  - `getServiceTypes(initData, page?, size?)` — paginated, defaults page=0, size=20
+  - `getSchedules(initData)` — available schedules
+  - `getAvailableSlots(initData, serviceId, date)` — time slots for a date
+  - `createReservation(initData, dto)` — `CreateReservationDto`: `start`, `serviceId`, `clientName`, `clientPhoneNumber`, `clientAddress`
+  - `getUserInfo(initData)` — GET `/rest/admin-ui/clients/me`; returns `UserInfoDto` (`id`, `name`, `isAdmin`)
+  - `getActiveReservations` / `getCreatedReservations` / `getCancelledReservations` / `getCompletedReservations` — admin reservation lists
+  - `completeReservation` / `cancelReservation` / `confirmReservation` — PATCH actions
+  - `createSchedule` / `deleteSchedule` / `updateSchedule` — schedule CRUD
+  - `getClientActiveReservations(initData)` — client's own active reservations
+  - `cancelClientReservation(initData, id)` — client cancel
+- `lib/utils/reservationStatus.ts` — `translateStatus(status)` maps enums to Russian; returns `'Неизвестный статус'` for unknown values
+- `types/api.d.ts` — all API types (`ServiceType`, `ServiceTypesResponse`, `Schedule`, `SchedulesResponse`, `CreateScheduleDto`, `ApiError`, `CreateReservationDto`, `PaginationInfo`, `UserInfoDto`, `AdminReservation`, `AdminReservationsResponse`, `ClientReservation`)
+- Base URL: `NEXT_PUBLIC_API_URL` env var
 
-**Image optimization:** `next.config.ts` whitelists the `NEXT_PUBLIC_API_URL` hostname for Next.js `<Image>` remote optimization. Add new image domains there when needed.
+**Image optimization:** `next.config.ts` whitelists the `NEXT_PUBLIC_API_URL` hostname for `<Image>`. Add new image domains there.
 
 ### Data Fetching Pattern
 
-Client components use `useState` + `useEffect` for data fetching:
-1. Get `initData` and `isReady` from `useTelegram()` context
-2. Gate the `useEffect` on `isReady` (and include it in the dependency array) to avoid firing before Telegram initialises
+All client components follow this pattern:
+1. Destructure `{ initData, isReady }` from `useTelegram()`
+2. **Gate the `useEffect` on `isReady`** and include it in the dependency array — without this, effects fire before Telegram initialises (empty `initData`)
 3. Pass `initData` to API service functions
-4. Handle loading/error states per component using `LoadingSpinner` / `ErrorMessage`
+4. Handle loading/error states with `LoadingSpinner` / `ErrorMessage`
+
+**Pagination:** When loading all items, use `response.page.totalPages` and loop: see `ServiceList.tsx` for the pattern.
 
 ## Component Conventions
 
 - All interactive or data-fetching components require `'use client'` directive
-- Reusable UI primitives live in `components/ui/` (`LoadingSpinner`, `ErrorMessage`)
-- Page-specific components in `components/home/` (or per-page directory)
-- Layout chrome in `components/layout/` (`Header`, `BottomNavBar`)
+- Reusable UI primitives: `components/ui/` (`LoadingSpinner`, `ErrorMessage`, `ConfirmDialog`)
+- Layout chrome: `components/layout/` (`Header`, `BottomNavBar`)
 
 ### In-App Navigation Pattern
 
-`components/home/HomeView.tsx` is the view controller for the home page. It holds `selected: ServiceType | null` state. When a service is selected from `ServiceList`, `HomeView` renders `ServiceDetail`; otherwise it renders `HeroBanner` + `ServiceList`. There is **no Next.js router involved** — navigation is pure React state switching within a single route.
+`HomeView.tsx` is the view controller. It holds `selected: ServiceType | null` state — when set, renders `ServiceDetail`; otherwise renders `HeroBanner` + `MyReservations` + `ServiceList`. **No Next.js router** — navigation is pure React state within one route.
+
+**`goHome` event:** `Header.tsx` logo dispatches `new Event('goHome')`. `HomeView` listens for it to reset `selected` to `null` **and** close the admin panel (`setAdminOpen(false)`). This is the only cross-component communication bypassing React props.
 
 ### ServiceCard Clip-Path
 
-`ServiceCard.tsx` uses a `ResizeObserver` to dynamically compute a CSS `clip-path` polygon that cuts a notch in the bottom-right corner of the card — the circular icon button sits in this cutout. Before modifying card dimensions or layout, be aware that the clip-path coordinates are recalculated on every resize and depend on the card's measured dimensions.
+`ServiceCard.tsx` uses a `ResizeObserver` to compute a CSS `clip-path` polygon for a notch in the bottom-right corner where the icon button sits. The polygon is recalculated on every resize. Don't modify card dimensions without accounting for this.
 
-### Placeholder Components
+### ConfirmDialog
 
-- **`BottomNavBar`** — renders a single home icon; placeholder for future multi-tab navigation.
+`components/ui/ConfirmDialog.tsx` — glassmorphism overlay with customisable message, yellow confirm button, grey cancel. Clicking the backdrop also cancels. Used for all destructive actions.
 
-### Booking Flow (full chain)
+### Booking Flow
 
-HomeView → ServiceDetail (`showBooking` state) → BookingSlots (date/slot picker) → BookingForm (address + contact form) → success screen.
-BookingSlots shows `BookingForm` when date and slot are both selected and "Продолжить" is clicked.
-
-### Admin Panel
-
-`components/admin/AdminButton.tsx` — floating gear icon button (bottom-right, z-40), visible only to admins.
-`components/admin/AdminPanel.tsx` — full-screen modal overlay with four tabs: "Активные", "Созданные", "Отменённые", "Выполненные". Fetches reservations per tab on tab change.
-
-**Access control:** `HomeView` calls `getUserInfo()` on mount; if `user.isAdmin === true`, renders `AdminButton` and `AdminPanel`. Errors are silently ignored (non-admins get no button).
-
-**ReservationCard (nested in AdminPanel):** shows id, service name, status, start/end times (ru-RU locale), client username + Telegram ID, phone (clipboard copy in Telegram, `tel:` link otherwise), address (links to Yandex Maps). Action buttons vary by tab:
-- Created: "Подтвердить", "Отменить"
-- Active: "Выполнить", "Отменить"
-- Cancelled/Completed: display-only
-
-**State in HomeView:** `isAdmin: boolean` + `adminOpen: boolean`.
+HomeView → ServiceDetail (`showBooking` state) → BookingSlots (date/slot picker) → BookingForm → success screen.
 
 ### BookingForm and Yandex Maps
 
-`components/home/BookingForm.tsx` collects contact info and address, then calls `createReservation`.
+`components/home/BookingForm.tsx` — inner `MapSection` component is defined in the same file and rendered inside `<YMaps>` so it can call `useYMaps(['geocode'])`. **Never move map logic outside this `<YMaps>` boundary.**
 
-**Inner component pattern:** `MapSection` is defined inside the file and rendered inside `<YMaps>` so it can call `useYMaps(['geocode'])`. Never move map logic outside this `<YMaps>` boundary.
+**Address search:**
+1. Debounced (300 ms) `ymaps.geocode(text)`, guarded by a **request counter** (`requestCounterRef`) to discard stale responses from overlapping async calls
+2. Coordinates extracted via `obj.geometry?.getCoordinates?.()` — objects without coords are skipped
+3. On select, `item.coords` is used directly
 
-**Address search flow:**
-1. Debounced (300 ms) `ymaps.geocode(text)` call builds the dropdown
-2. Coordinates are extracted via `obj.geometry?.getCoordinates?.()` at search time — objects without coordinates are skipped
-3. On select, `item.coords` is used directly (no second `getCoordinates()` call)
+**Touch support:** Dropdown result items have both `onMouseDown` and `onTouchStart` handlers — `onTouchStart` calls `e.preventDefault()` to prevent the input blur from firing before selection.
 
-**Zone validation:** `pointInPolygon()` (pure JS ray-casting, module-level function in BookingForm.tsx) validates that the chosen point is within `ZONE_COORDS`. Do NOT replace this with `ymaps.geometry.Polygon.contains()` — that API uses pixel coordinates and is unreliable for geographic data.
+**Zone validation:** `pointInPolygon()` (pure JS ray-casting, module-level) validates that a point is within `ZONE_COORDS`. Do NOT replace with `ymaps.geometry.Polygon.contains()` — that API uses pixel coordinates and is unreliable for geographic data. Error message: `'Адрес вне зоны доставки'` — use this exact text in both map-click and search-select paths.
 
-**`<YMaps>` config:** loaded with `query={{ apikey: NEXT_PUBLIC_YANDEX_MAPS_API_KEY, load: 'package.full' }}`. The `load: 'package.full'` is required for geocoding to work.
+**Phone validation:** `validate()` checks the phone field with `/^\+?[78]\d{10}$/` after stripping spaces, dashes, and parentheses.
+
+**`<YMaps>` config:** `query={{ apikey: NEXT_PUBLIC_YANDEX_MAPS_API_KEY, load: 'package.full' }}` — `load: 'package.full'` is required for geocoding.
+
+### Admin Panel
+
+`AdminPanel.tsx` — full-screen modal, five tabs: "Активные", "Созданные", "Отменённые", "Выполненные", "Расписание".
+
+- On tab change, **`setReservations([])` is called immediately** before the fetch to avoid old data flickering
+- `ReservationCard` — setTimeout for clipboard feedback stored in `useRef` and cleared before each new copy to avoid multiple concurrent timers
+- `formatScheduleDate` — parses with `new Date(year, month-1, day)` (not `dateStr + 'T00:00:00'`) to avoid UTC timezone offset shifting dates
+
+**Access control:** `HomeView` calls `getUserInfo()` on mount; if `user.isAdmin === true`, renders `AdminButton` + `AdminPanel`. Errors silently ignored (non-admins see nothing).
+
+**ReservationCard actions (by tab):**
+- Created: "Подтвердить", "Отменить"
+- Active: "Выполнить", "Отменить" (+ "Подтвердить" if status is still CREATED)
+- Cancelled/Completed: display-only
 
 ### Styling Patterns
 
-- **Glassmorphism:** frosted-glass elements use both `backdrop-filter: blur()` and `-webkit-backdrop-filter: blur()` (both required for WebKit/Safari) with `rgba()` backgrounds (see `Header.tsx`, `BottomNavBar.tsx`)
-- **CTA color:** primary action buttons use yellow `#f5c518`
-- **Safe area insets:** fixed header/nav use `env(safe-area-inset-top/bottom)` for notch/home-bar compensation; `app/page.tsx` adds matching padding to the scroll container
-- **Locale:** monetary values are formatted with `toLocaleString('ru-RU')` and the ruble sign (₽)
-- **Language:** UI text is in Russian; metadata lang is `"ru"`
-- **Image URLs:** `ServiceCard` handles both relative and absolute image URLs — relative URLs are automatically prefixed with `NEXT_PUBLIC_API_URL`
+- **Glassmorphism:** use both `backdropFilter: 'blur()'` and `WebkitBackdropFilter: 'blur()'` with `rgba()` backgrounds
+- **CTA color:** `#f5c518` (yellow)
+- **Safe area insets:** fixed header/nav use `env(safe-area-inset-top/bottom)`; `app/page.tsx` adds matching padding to the scroll container
+- **Locale:** Russian UI text, `toLocaleString('ru-RU')`, ruble sign ₽
+- **Image URLs:** `ServiceCard` handles both relative and absolute URLs — relative ones are prefixed with `NEXT_PUBLIC_API_URL`
 
 ## Environment Variables
 
 - `NEXT_PUBLIC_API_URL` — backend API base URL (required)
-- `NEXT_PUBLIC_YANDEX_MAPS_API_KEY` — Yandex Maps API key; used in `BookingForm.tsx` via `<YMaps query={{ apikey }}>`.
-
-## Code Style
-
-- ESLint is configured with Next.js recommended rules (`eslint-config-next`)
-- TypeScript strict mode is enabled
-- React 19 Server Components are the default (use `'use client'` directive when needed)
+- `NEXT_PUBLIC_YANDEX_MAPS_API_KEY` — Yandex Maps API key

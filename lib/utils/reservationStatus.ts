@@ -7,5 +7,5 @@ const STATUS_MAP: Record<string, string> = {
 }
 
 export function translateStatus(status: string): string {
-  return STATUS_MAP[status] ?? status
+  return STATUS_MAP[status] ?? 'Неизвестный статус'
 }

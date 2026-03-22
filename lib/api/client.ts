@@ -35,10 +35,14 @@ export class ApiClient {
       headers['X-Telegram-Init-Data'] = this.initData;
     }
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30_000);
+
     try {
       const response = await fetch(url, {
         ...options,
         headers,
+        signal: controller.signal,
       });
 
       if (!response.ok) {
@@ -58,12 +62,16 @@ export class ApiClient {
         throw error;
       }
 
-      // Network or other error
+      // Network or timeout error
       const apiError: ApiError = {
-        message: error instanceof Error ? error.message : 'Unknown error occurred',
+        message: error instanceof Error
+          ? (error.name === 'AbortError' ? 'Превышено время ожидания запроса' : error.message)
+          : 'Unknown error occurred',
         details: error,
       };
       throw apiError;
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 

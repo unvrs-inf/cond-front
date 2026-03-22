@@ -1,10 +1,11 @@
 'use client'
 
 import Image from 'next/image'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 export function Header() {
 	const [copied, setCopied] = useState(false)
+	const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
 	return (
 		<header className='fixed top-0 left-0 right-0 h-14 z-50 flex items-center justify-between px-4 py-10'>
@@ -38,7 +39,8 @@ export function Header() {
 							e.preventDefault()
 							navigator.clipboard.writeText('+78000000000').then(() => {
 								setCopied(true)
-								setTimeout(() => setCopied(false), 2000)
+								clearTimeout(copiedTimerRef.current)
+								copiedTimerRef.current = setTimeout(() => setCopied(false), 2000)
 							})
 						}
 					}}
