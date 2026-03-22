@@ -4,13 +4,13 @@ import { TelegramProvider } from "@/components/providers/TelegramProvider";
 import { TelegramScript } from "@/components/providers/TelegramScript";
 import "./globals.css";
 
-const openSans = localFont({
+const nunito = localFont({
   src: [
-    { path: "../public/fonts/OpenSans-Light.woff2", weight: "300", style: "normal" },
-    { path: "../public/fonts/OpenSans-Regular.woff2", weight: "400", style: "normal" },
-    { path: "../public/fonts/OpenSans-Medium.woff2", weight: "500", style: "normal" },
+    { path: "../public/fonts/Nunito-Regular.woff2", weight: "400", style: "normal" },
+    { path: "../public/fonts/Nunito-Medium.woff2", weight: "500", style: "normal" },
+    { path: "../public/fonts/Nunito-SemiBold.woff2", weight: "600", style: "normal" },
   ],
-  variable: "--font-open-sans",
+  variable: "--font-nunito",
   display: "swap",
 });
 
@@ -30,7 +30,7 @@ export default function RootLayout({
         <TelegramScript />
       </head>
       <body
-        className={`${openSans.variable} antialiased`}
+        className={`${nunito.className} antialiased`}
         style={{ margin: 0, padding: 0 }}
       >
         <TelegramProvider>

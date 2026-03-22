@@ -57,13 +57,16 @@ export function ServiceList({ onSelect }: ServiceListProps) {
 		)
 	}
 
+	const isFullWidth = services.length < 2
+
 	return (
 		<div>
-			<div className='grid grid-cols-2 gap-4 mb-8'>
+			<div className={`grid ${isFullWidth ? 'grid-cols-1' : 'grid-cols-2'} gap-4 mb-8`}>
 				{services.map(service => (
 					<ServiceCard
 						key={service.id}
 						service={service}
+						fullWidth={isFullWidth}
 						onClick={() => onSelect(service)}
 					/>
 				))}

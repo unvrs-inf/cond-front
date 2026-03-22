@@ -9,8 +9,8 @@ export function HeroBanner() {
 			<div
 				className='relative z-10 mb-[-48px] rounded-full w-24 h-24 flex items-center justify-center overflow-hidden flex-shrink-0'
 				style={{
-					background: 'rgba(0,0,0,0.7)',
-					border: '2px solid rgba(255,255,255,0.2)',
+					background: 'rgba(5,15,50,0.72)',
+					border: '2px solid rgba(150,185,255,0.25)',
 				}}
 			>
 				<Image
@@ -26,13 +26,13 @@ export function HeroBanner() {
 			<div
 				className='w-full rounded-4xl flex flex-col items-center pt-16 pb-8 px-6'
 				style={{
-					background: 'rgba(0, 0, 0, 0.45)',
+					background: 'rgba(5,15,50,0.55)',
 					backdropFilter: 'blur(12px)',
 					WebkitBackdropFilter: 'blur(12px)',
 				}}
 			>
 				<h2 className='text-white font-medium text-xl text-center mb-2'>
-					Обслуживание и установка кондиционеров
+					Обслуживание кондиционеров
 				</h2>
 				<p className='text-yellow-400 text-xl font-med tracking-wide uppercase'>
 					ОНЛАЙН БРОНИРОВАНИЕ

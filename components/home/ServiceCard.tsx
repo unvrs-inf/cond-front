@@ -7,10 +7,11 @@ import { useLayoutEffect, useRef, useState } from 'react'
 interface ServiceCardProps {
 	service: ServiceType
 	onClick?: () => void
+	fullWidth?: boolean
 }
 
 const CORNER_R = 24 // rounded-3xl
-const NOTCH_R = 24  // half of w-12 (48px button)
+const NOTCH_R = 36 // half of new button size 72px
 
 function buildClipPath(w: number, h: number): string {
 	const r = CORNER_R
@@ -18,7 +19,7 @@ function buildClipPath(w: number, h: number): string {
 	return `path('M ${r} 0 L ${w - r} 0 A ${r} ${r} 0 0 1 ${w} ${r} L ${w} ${h - nr} A ${nr} ${nr} 0 0 0 ${w - nr} ${h} L ${r} ${h} A ${r} ${r} 0 0 1 0 ${h - r} L 0 ${r} A ${r} ${r} 0 0 1 ${r} 0 Z')`
 }
 
-export function ServiceCard({ service, onClick }: ServiceCardProps) {
+export function ServiceCard({ service, onClick, fullWidth }: ServiceCardProps) {
 	const wrapperRef = useRef<HTMLDivElement>(null)
 	const [clipPath, setClipPath] = useState('')
 
@@ -43,14 +44,14 @@ export function ServiceCard({ service, onClick }: ServiceCardProps) {
 		<div
 			ref={wrapperRef}
 			className='relative cursor-pointer transition-transform duration-200 hover:scale-[1.03] active:scale-[0.97]'
-			style={{ minHeight: '220px' }}
+			style={{ minHeight: fullWidth ? '320px' : '260px' }}
 			onClick={onClick}
 		>
 			{/* Frosted glass card body */}
 			<div
 				className='absolute inset-0'
 				style={{
-					background: 'rgba(255,255,255,0.13)',
+					background: 'rgba(100, 150, 255, 0.13)',
 					backdropFilter: 'blur(12px)',
 					WebkitBackdropFilter: 'blur(12px)',
 					clipPath: clipPath || undefined,
@@ -58,7 +59,7 @@ export function ServiceCard({ service, onClick }: ServiceCardProps) {
 				}}
 			>
 				{/* Service image — top-right inside card */}
-				<div className='absolute top-0 right-0 w-33 h-30'>
+				<div className='absolute top-0 right-0 w-[238px] h-[220px]'>
 					{imageSrc ? (
 						<Image
 							src={imageSrc}
@@ -74,11 +75,11 @@ export function ServiceCard({ service, onClick }: ServiceCardProps) {
 				</div>
 
 				{/* Service name and price — bottom-left */}
-				<div className='absolute bottom-4 left-4 right-14'>
-					<p className='text-yellow-400 uppercase text-xs font-medium leading-tight mb-1 line-clamp-2'>
+				<div className='absolute bottom-5 left-5 right-20'>
+					<p className='text-yellow-400 uppercase text-lg font-medium leading-tight mb-1 line-clamp-2'>
 						{service.serviceName}
 					</p>
-					<p className='text-white text-sm font-semibold'>
+					<p className='text-white text-xl font-semibold'>
 						{service.cost.toLocaleString('ru-RU')} ₽
 					</p>
 				</div>
@@ -86,14 +87,16 @@ export function ServiceCard({ service, onClick }: ServiceCardProps) {
 
 			{/* Three-dots circle — sits in bottom-right notch */}
 			<div
-				className='absolute w-12 h-12 rounded-full flex items-center justify-center z-10'
+				className='absolute rounded-full flex items-center justify-center z-10'
 				style={{
 					bottom: 0,
 					right: 0,
-					background: 'linear-gradient(145deg, #1e1e2e 0%, #5a5a7a 100%)',
+					width: '72px',
+					height: '72px',
+					background: 'linear-gradient(145deg, #0f1941d9 0%, #5a5a7a 100%)',
 				}}
 			>
-				<span className='text-white text-lg leading-none tracking-[0.2em]'>
+				<span className='text-white text-xl leading-none tracking-[0.2em]'>
 					···
 				</span>
 			</div>

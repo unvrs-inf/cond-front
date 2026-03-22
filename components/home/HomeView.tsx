@@ -24,6 +24,12 @@ export function HomeView() {
     }).catch(() => {})
   }, [isReady, initData])
 
+  useEffect(() => {
+    const handler = () => setSelected(null)
+    window.addEventListener('goHome', handler)
+    return () => window.removeEventListener('goHome', handler)
+  }, [])
+
   return (
     <>
       {selected ? (

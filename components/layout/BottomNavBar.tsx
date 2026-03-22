@@ -7,7 +7,7 @@ export function BottomNavBar() {
     <nav
       className="fixed bottom-0 left-0 right-0 h-16 flex items-center justify-center border-t"
       style={{
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'rgba(10,20,55,0.5)',
         backdropFilter: 'blur(8px)',
         WebkitBackdropFilter: 'blur(8px)',
         borderColor: 'rgba(255,255,255,0.1)',

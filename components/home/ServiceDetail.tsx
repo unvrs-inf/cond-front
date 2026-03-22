@@ -20,7 +20,13 @@ export function ServiceDetail({ service, onBack }: ServiceDetailProps) {
 		: null
 
 	if (showBooking) {
-		return <BookingSlots service={service} onBack={() => setShowBooking(false)} />
+		return (
+			<BookingSlots
+				service={service}
+				onBack={() => setShowBooking(false)}
+				onGoHome={onBack}
+			/>
+		)
 	}
 
 	return (
@@ -31,7 +37,7 @@ export function ServiceDetail({ service, onBack }: ServiceDetailProps) {
 				style={{
 					minHeight: '260px',
 					borderRadius: '24px',
-					background: 'rgba(255,255,255,0.13)',
+					background: 'rgba(15,25,65,0.85)',
 					backdropFilter: 'blur(12px)',
 					WebkitBackdropFilter: 'blur(12px)',
 				}}
@@ -67,13 +73,13 @@ export function ServiceDetail({ service, onBack }: ServiceDetailProps) {
 			<div
 				className='rounded-3xl p-4 mb-4'
 				style={{
-					background: 'rgba(255,255,255,0.13)',
+					background: 'rgba(15,25,65,0.85)',
 					backdropFilter: 'blur(12px)',
 					WebkitBackdropFilter: 'blur(12px)',
 				}}
 			>
 				<p className='text-white font-medium mb-3'>Подробнее об услуге</p>
-				<p className='text-white/70 text-sm leading-relaxed whitespace-pre-wrap'>
+				<p className='text-white/90 text-sm leading-relaxed whitespace-pre-wrap'>
 					{service.serviceDescription}
 				</p>
 			</div>
@@ -90,7 +96,7 @@ export function ServiceDetail({ service, onBack }: ServiceDetailProps) {
 					onClick={onBack}
 					className='flex-1 flex items-center justify-center font-semibold text-white uppercase tracking-wider rounded-3xl cursor-pointer transition-opacity duration-150 hover:opacity-80'
 					style={{
-						background: 'rgba(30,30,46,0.85)',
+						background: 'rgba(15,25,65,0.85)',
 						backdropFilter: 'blur(12px)',
 						WebkitBackdropFilter: 'blur(12px)',
 					}}

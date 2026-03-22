@@ -10,7 +10,7 @@ export function ConfirmDialog({ message, onConfirm, onCancel }: ConfirmDialogPro
   return (
     <div
       className='fixed inset-0 z-60 flex items-center justify-center px-6'
-      style={{ background: 'rgba(10,10,20,0.85)' }}
+      style={{ background: 'rgba(5,12,40,0.85)' }}
       onClick={onCancel}
     >
       <div

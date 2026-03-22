@@ -11,6 +11,7 @@ import { BookingForm } from './BookingForm'
 interface BookingSlotsProps {
 	service: ServiceType
 	onBack: () => void
+	onGoHome: () => void
 }
 
 function formatDate(dateStr: string): string {
@@ -26,7 +27,7 @@ function formatSlot(slot: string): string {
 	return slot.replace(/:\d{2}$/, '')
 }
 
-export function BookingSlots({ service, onBack }: BookingSlotsProps) {
+export function BookingSlots({ service, onBack, onGoHome }: BookingSlotsProps) {
 	const { initData } = useTelegram()
 	const [schedules, setSchedules] = useState<Schedule[]>([])
 	const [selectedDate, setSelectedDate] = useState<string | null>(null)
@@ -74,13 +75,14 @@ export function BookingSlots({ service, onBack }: BookingSlotsProps) {
 				selectedDate={selectedDate}
 				selectedSlot={selectedSlot}
 				onBack={() => setShowForm(false)}
+				onGoHome={onGoHome}
 			/>
 		)
 	}
 
 	return (
 		<div className='flex flex-col gap-4 p-4 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]'>
-			<p className='text-white/70 text-sm mt-6'>Выберите удобный день</p>
+			<p className='text-white/90 text-sm mt-6'>Выберите удобный день</p>
 
 			{loadingSchedules ? (
 				<LoadingSpinner />
@@ -98,7 +100,7 @@ export function BookingSlots({ service, onBack }: BookingSlotsProps) {
 								style={{
 									background: isSelected
 										? 'rgba(245,197,24,0.2)'
-										: 'rgba(255,255,255,0.13)',
+										: 'rgba(15,25,65,0.85)',
 									backdropFilter: 'blur(12px)',
 									WebkitBackdropFilter: 'blur(12px)',
 									border: isSelected
@@ -115,13 +117,13 @@ export function BookingSlots({ service, onBack }: BookingSlotsProps) {
 
 			{selectedDate && (
 				<>
-					<p className='text-white/70 text-sm mt-2'>Доступное время</p>
+					<p className='text-white/90 text-sm mt-2'>Доступное время</p>
 					{loadingSlots ? (
 						<LoadingSpinner />
 					) : error ? (
 						<ErrorMessage message={error} />
 					) : slots.length === 0 ? (
-						<p className='text-white/50 text-sm'>Нет доступных слотов</p>
+						<p className='text-white/70 text-sm'>Нет доступных слотов</p>
 					) : (
 						<div className='grid grid-cols-3 gap-2 mb-6'>
 							{slots.map(slot => {
@@ -134,7 +136,7 @@ export function BookingSlots({ service, onBack }: BookingSlotsProps) {
 										style={{
 											background: isSelected
 												? 'rgba(245,197,24,0.2)'
-												: 'rgba(255,255,255,0.13)',
+												: 'rgba(15,25,65,0.85)',
 											backdropFilter: 'blur(12px)',
 											WebkitBackdropFilter: 'blur(12px)',
 											border: isSelected
@@ -165,7 +167,7 @@ export function BookingSlots({ service, onBack }: BookingSlotsProps) {
 					onClick={onBack}
 					className='flex-1 py-4 rounded-3xl font-semibold text-white cursor-pointer transition-opacity duration-150 hover:opacity-80'
 					style={{
-						background: 'rgba(30,30,46,0.85)',
+						background: 'rgba(15,25,65,0.85)',
 						backdropFilter: 'blur(12px)',
 						WebkitBackdropFilter: 'blur(12px)',
 					}}

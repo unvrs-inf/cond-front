@@ -5,7 +5,12 @@ import Image from 'next/image'
 export function Header() {
 	return (
 		<header className='fixed top-0 left-0 right-0 h-14 z-50 flex items-center justify-between px-4 py-10'>
-			<div className='flex items-center px-3 py-1.5'>
+			<button
+				className='flex items-center px-3 py-1.5 cursor-pointer'
+				style={{ background: 'none', border: 'none', padding: 0 }}
+				onClick={() => window.dispatchEvent(new Event('goHome'))}
+				aria-label='На главную'
+			>
 				<Image
 					src='/text-logo.svg'
 					height={80}
@@ -13,16 +18,19 @@ export function Header() {
 					alt='Лого'
 					style={{ filter: 'brightness(0) invert(1)' }}
 				/>
-			</div>
+			</button>
 			<div
 				className='flex items-center px-3 py-1.5 rounded-2xl'
 				style={{
-					background: 'rgba(0, 0, 0, 0.45)',
+					background: 'rgba(10,20,60,0.50)',
 					backdropFilter: 'blur(12px)',
 					WebkitBackdropFilter: 'blur(12px)',
 				}}
 			>
-				<a href='tel:+78000000000' className='text-sm font-normal text-white'>
+				<a
+					href='tel:+78000000000'
+					className='text-sm font-normal text-yellow-400'
+				>
 					+7 (800) 000-00-00
 				</a>
 			</div>

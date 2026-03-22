@@ -39,6 +39,7 @@ interface BookingFormProps {
 	selectedDate: string
 	selectedSlot: string
 	onBack: () => void
+	onGoHome: () => void
 }
 
 interface FormFields {
@@ -83,10 +84,10 @@ function pointInPolygon(
 }
 
 const inputStyle: React.CSSProperties = {
-	background: 'rgba(255,255,255,0.10)',
+	background: 'rgba(15,25,65,0.85)',
 	backdropFilter: 'blur(12px)',
 	WebkitBackdropFilter: 'blur(12px)',
-	border: '1px solid rgba(255,255,255,0.18)',
+	border: '1px solid rgba(150,185,255,0.22)',
 	borderRadius: '12px',
 	color: '#fff',
 	padding: '10px 14px',
@@ -243,10 +244,10 @@ function MapSection({
 							top: '100%',
 							left: 0,
 							right: 0,
-							background: 'rgba(20,20,35,0.97)',
+							background: 'rgba(8,18,55,0.97)',
 							backdropFilter: 'blur(12px)',
 							WebkitBackdropFilter: 'blur(12px)',
-							border: '1px solid rgba(255,255,255,0.15)',
+							border: '1px solid rgba(150,185,255,0.20)',
 							borderRadius: '12px',
 							marginTop: '4px',
 							overflow: 'hidden',
@@ -320,6 +321,7 @@ export function BookingForm({
 	selectedDate,
 	selectedSlot,
 	onBack,
+	onGoHome,
 }: BookingFormProps) {
 	const { initData } = useTelegram()
 	const [fields, setFields] = useState<FormFields>({
@@ -420,11 +422,11 @@ export function BookingForm({
 			<div className='flex flex-col items-center justify-center gap-6 p-8 text-center min-h-[60vh]'>
 				<div className='text-4xl'>✓</div>
 				<p className='text-white text-lg font-semibold'>Заявка отправлена!</p>
-				<p className='text-white/60 text-sm'>
+				<p className='text-white/85 text-sm'>
 					Мы свяжемся с вами для подтверждения
 				</p>
 				<button
-					onClick={onBack}
+					onClick={onGoHome}
 					className='px-8 py-3 rounded-2xl font-semibold text-black cursor-pointer'
 					style={{ background: '#f5c518' }}
 				>
@@ -436,7 +438,7 @@ export function BookingForm({
 
 	return (
 		<div className='flex flex-col gap-4 p-4 pb-[calc(6rem+env(safe-area-inset-bottom,0px))]'>
-			<p className='text-white/70 text-sm mt-6'>Контактная информация</p>
+			<p className='text-white/90 text-sm mt-6'>Контактная информация</p>
 
 			<div>
 				<input
@@ -460,7 +462,7 @@ export function BookingForm({
 				{errors.phone && <p style={errorStyle}>{errors.phone}</p>}
 			</div>
 
-			<p className='text-white/70 text-sm mt-2'>Адрес</p>
+			<p className='text-white/90 text-sm mt-2'>Адрес</p>
 
 			<YMaps
 				query={{
@@ -558,7 +560,7 @@ export function BookingForm({
 					onClick={onBack}
 					className='flex-1 py-4 rounded-3xl font-semibold text-white cursor-pointer transition-opacity duration-150 hover:opacity-80'
 					style={{
-						background: 'rgba(30,30,46,0.85)',
+						background: 'rgba(15,25,65,0.85)',
 						backdropFilter: 'blur(12px)',
 						WebkitBackdropFilter: 'blur(12px)',
 					}}

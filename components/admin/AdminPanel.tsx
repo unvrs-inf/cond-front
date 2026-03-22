@@ -34,11 +34,22 @@ const TABS: { id: Tab; label: string }[] = [
 function formatDateTime(dt: string): string {
   const date = new Date(dt)
   return date.toLocaleString('ru-RU', {
+    weekday: 'short',
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+  })
+}
+
+function formatScheduleDate(dateStr: string): string {
+  const date = new Date(dateStr + 'T00:00:00')
+  return date.toLocaleDateString('ru-RU', {
+    weekday: 'short',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
   })
 }
 
@@ -79,22 +90,22 @@ function ReservationCard({ reservation, tab, initData, onUpdate, onRemove }: Res
 
   return (
     <div
-      className='rounded-2xl p-4 mb-3'
-      style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+      className='rounded-2xl p-5 mb-4'
+      style={{ background: 'rgba(100,150,255,0.10)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
     >
       <div className='flex items-start justify-between mb-2'>
-        <span className='text-sm font-medium' style={{ color: '#f5c518' }}>
+        <span className='text-base font-semibold' style={{ color: '#f5c518' }}>
           #{reservation.id} — {reservation.typeOfService.serviceName}
         </span>
         <span
-          className='text-xs px-2 py-0.5 rounded-full'
+          className='text-sm px-2.5 py-0.5 rounded-full'
           style={{ background: 'rgba(245,197,24,0.2)', color: '#f5c518' }}
         >
           {translateStatus(reservation.status)}
         </span>
       </div>
 
-      <div className='text-xs space-y-1 mb-3' style={{ color: 'rgba(255,255,255,0.7)' }}>
+      <div className='text-sm space-y-2 mb-4' style={{ color: 'rgba(255,255,255,0.90)' }}>
         <div>Начало: {formatDateTime(reservation.startDateTime)}</div>
         <div>Конец: {formatDateTime(reservation.endDateTime)}</div>
         <div>Клиент: @{reservation.client.username} (ID: {reservation.client.id})</div>
@@ -116,7 +127,7 @@ function ReservationCard({ reservation, tab, initData, onUpdate, onRemove }: Res
             {reservation.clientPhoneNumber}
           </a>
           {copiedPhone && (
-            <span style={{ color: 'rgba(255,255,255,0.6)', marginLeft: 6, fontSize: '0.75rem' }}>
+            <span style={{ color: 'rgba(255,255,255,0.80)', marginLeft: 6, fontSize: '0.75rem' }}>
               ✓ Скопировано
             </span>
           )}
@@ -134,7 +145,7 @@ function ReservationCard({ reservation, tab, initData, onUpdate, onRemove }: Res
         </div>
       </div>
 
-      {error && <p className='text-xs text-red-400 mb-2'>{error}</p>}
+      {error && <p className='text-sm text-red-400 mb-2'>{error}</p>}
 
       {(tab === 'active' || tab === 'created') && (
         <div className='flex gap-2'>
@@ -142,7 +153,7 @@ function ReservationCard({ reservation, tab, initData, onUpdate, onRemove }: Res
             <button
               onClick={() => handleAction('complete')}
               disabled={loading}
-              className='flex-1 py-1.5 rounded-xl text-sm font-medium disabled:opacity-50'
+              className='flex-1 py-2.5 rounded-xl text-base font-medium disabled:opacity-50'
               style={{ background: '#f5c518', color: '#1a1a1a' }}
             >
               {loading ? '...' : 'Выполнить'}
@@ -152,7 +163,7 @@ function ReservationCard({ reservation, tab, initData, onUpdate, onRemove }: Res
             <button
               onClick={() => handleAction('confirm')}
               disabled={loading}
-              className='flex-1 py-1.5 rounded-xl text-sm font-medium disabled:opacity-50'
+              className='flex-1 py-2.5 rounded-xl text-base font-medium disabled:opacity-50'
               style={{ background: '#f5c518', color: '#1a1a1a' }}
             >
               {loading ? '...' : 'Подтвердить'}
@@ -161,8 +172,8 @@ function ReservationCard({ reservation, tab, initData, onUpdate, onRemove }: Res
           <button
             onClick={() => setConfirmOpen(true)}
             disabled={loading}
-            className='flex-1 py-1.5 rounded-xl text-sm font-medium disabled:opacity-50'
-            style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)' }}
+            className='flex-1 py-2.5 rounded-xl text-base font-medium disabled:opacity-50'
+            style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.95)' }}
           >
             {loading ? '...' : 'Отменить'}
           </button>
@@ -190,6 +201,7 @@ function ScheduleCard({ schedule, initData, onRemove, onUpdate }: ScheduleCardPr
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
   const [editDate, setEditDate] = useState(schedule.date)
   const [editBeginning, setEditBeginning] = useState(schedule.workBeginning.slice(0, 5))
   const [editEnding, setEditEnding] = useState(schedule.workEnding.slice(0, 5))
@@ -237,21 +249,21 @@ function ScheduleCard({ schedule, initData, onRemove, onUpdate }: ScheduleCardPr
 
   return (
     <div
-      className='rounded-2xl p-4 mb-3'
-      style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+      className='rounded-2xl p-5 mb-4'
+      style={{ background: 'rgba(100,150,255,0.10)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
     >
       <div className='flex items-center justify-between mb-1'>
-        <span className='text-sm font-medium' style={{ color: '#f5c518' }}>
-          {editing ? editDate : schedule.date}
+        <span className='text-base font-semibold' style={{ color: '#f5c518' }}>
+          {editing ? editDate : formatScheduleDate(schedule.date)}
         </span>
-        <span className='text-xs' style={{ color: 'rgba(255,255,255,0.6)' }}>
+        <span className='text-sm' style={{ color: 'rgba(255,255,255,0.80)' }}>
           #{schedule.id}
         </span>
       </div>
       {editing ? (
         <div className='space-y-3 mb-3'>
           <div>
-            <label className='block text-xs mb-1' style={{ color: 'rgba(255,255,255,0.6)' }}>Дата</label>
+            <label className='block text-sm mb-1' style={{ color: 'rgba(255,255,255,0.80)' }}>Дата</label>
             <input
               type='date'
               value={editDate}
@@ -260,7 +272,7 @@ function ScheduleCard({ schedule, initData, onRemove, onUpdate }: ScheduleCardPr
             />
           </div>
           <div>
-            <label className='block text-xs mb-1' style={{ color: 'rgba(255,255,255,0.6)' }}>Начало работы</label>
+            <label className='block text-sm mb-1' style={{ color: 'rgba(255,255,255,0.80)' }}>Начало работы</label>
             <input
               type='time'
               value={editBeginning}
@@ -269,7 +281,7 @@ function ScheduleCard({ schedule, initData, onRemove, onUpdate }: ScheduleCardPr
             />
           </div>
           <div>
-            <label className='block text-xs mb-1' style={{ color: 'rgba(255,255,255,0.6)' }}>Конец работы</label>
+            <label className='block text-sm mb-1' style={{ color: 'rgba(255,255,255,0.80)' }}>Конец работы</label>
             <input
               type='time'
               value={editEnding}
@@ -279,17 +291,24 @@ function ScheduleCard({ schedule, initData, onRemove, onUpdate }: ScheduleCardPr
           </div>
         </div>
       ) : (
-        <div className='text-xs mb-3' style={{ color: 'rgba(255,255,255,0.7)' }}>
+        <div className='text-sm mb-3' style={{ color: 'rgba(255,255,255,0.90)' }}>
           {schedule.workBeginning.slice(0, 5)} — {schedule.workEnding.slice(0, 5)}
         </div>
       )}
-      {error && <p className='text-xs text-red-400 mb-2'>{error}</p>}
+      {confirmOpen && (
+        <ConfirmDialog
+          message='Вы точно хотите удалить расписание?'
+          onConfirm={() => { setConfirmOpen(false); handleDelete() }}
+          onCancel={() => setConfirmOpen(false)}
+        />
+      )}
+      {error && <p className='text-sm text-red-400 mb-2'>{error}</p>}
       {editing ? (
         <div className='flex gap-2'>
           <button
             onClick={handleSave}
             disabled={loading}
-            className='flex-1 py-1.5 rounded-xl text-sm font-medium disabled:opacity-50'
+            className='flex-1 py-2.5 rounded-xl text-base font-medium disabled:opacity-50'
             style={{ background: '#f5c518', color: '#1a1a1a' }}
           >
             {loading ? '...' : 'Сохранить'}
@@ -297,8 +316,8 @@ function ScheduleCard({ schedule, initData, onRemove, onUpdate }: ScheduleCardPr
           <button
             onClick={() => { setEditing(false); setError(null) }}
             disabled={loading}
-            className='flex-1 py-1.5 rounded-xl text-sm font-medium disabled:opacity-50'
-            style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)' }}
+            className='flex-1 py-2.5 rounded-xl text-base font-medium disabled:opacity-50'
+            style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.95)' }}
           >
             Отмена
           </button>
@@ -308,16 +327,16 @@ function ScheduleCard({ schedule, initData, onRemove, onUpdate }: ScheduleCardPr
           <button
             onClick={() => setEditing(true)}
             disabled={loading}
-            className='flex-1 py-1.5 rounded-xl text-sm font-medium disabled:opacity-50'
+            className='flex-1 py-2.5 rounded-xl text-base font-medium disabled:opacity-50'
             style={{ background: '#f5c518', color: '#1a1a1a' }}
           >
             Изменить
           </button>
           <button
-            onClick={handleDelete}
+            onClick={() => setConfirmOpen(true)}
             disabled={loading}
-            className='flex-1 py-1.5 rounded-xl text-sm font-medium disabled:opacity-50'
-            style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)' }}
+            className='flex-1 py-2.5 rounded-xl text-base font-medium disabled:opacity-50'
+            style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.95)' }}
           >
             {loading ? '...' : 'Удалить'}
           </button>
@@ -367,12 +386,12 @@ function AddScheduleForm({ initData, onAdd, onCancel }: AddScheduleFormProps) {
 
   return (
     <div
-      className='rounded-2xl p-4 mb-3'
-      style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+      className='rounded-2xl p-5 mb-4'
+      style={{ background: 'rgba(100,150,255,0.10)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
     >
       <div className='space-y-3 mb-3'>
         <div>
-          <label className='block text-xs mb-1' style={{ color: 'rgba(255,255,255,0.6)' }}>Дата</label>
+          <label className='block text-sm mb-1' style={{ color: 'rgba(255,255,255,0.80)' }}>Дата</label>
           <input
             type='date'
             value={date}
@@ -382,7 +401,7 @@ function AddScheduleForm({ initData, onAdd, onCancel }: AddScheduleFormProps) {
           />
         </div>
         <div>
-          <label className='block text-xs mb-1' style={{ color: 'rgba(255,255,255,0.6)' }}>Начало работы</label>
+          <label className='block text-sm mb-1' style={{ color: 'rgba(255,255,255,0.80)' }}>Начало работы</label>
           <input
             type='time'
             value={workBeginning}
@@ -391,7 +410,7 @@ function AddScheduleForm({ initData, onAdd, onCancel }: AddScheduleFormProps) {
           />
         </div>
         <div>
-          <label className='block text-xs mb-1' style={{ color: 'rgba(255,255,255,0.6)' }}>Конец работы</label>
+          <label className='block text-sm mb-1' style={{ color: 'rgba(255,255,255,0.80)' }}>Конец работы</label>
           <input
             type='time'
             value={workEnding}
@@ -400,12 +419,12 @@ function AddScheduleForm({ initData, onAdd, onCancel }: AddScheduleFormProps) {
           />
         </div>
       </div>
-      {error && <p className='text-xs text-red-400 mb-2'>{error}</p>}
+      {error && <p className='text-sm text-red-400 mb-2'>{error}</p>}
       <div className='flex gap-2'>
         <button
           onClick={handleSave}
           disabled={loading}
-          className='flex-1 py-1.5 rounded-xl text-sm font-medium disabled:opacity-50'
+          className='flex-1 py-2.5 rounded-xl text-base font-medium disabled:opacity-50'
           style={{ background: '#f5c518', color: '#1a1a1a' }}
         >
           {loading ? '...' : 'Сохранить'}
@@ -413,8 +432,8 @@ function AddScheduleForm({ initData, onAdd, onCancel }: AddScheduleFormProps) {
         <button
           onClick={onCancel}
           disabled={loading}
-          className='flex-1 py-1.5 rounded-xl text-sm font-medium disabled:opacity-50'
-          style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)' }}
+          className='flex-1 py-2.5 rounded-xl text-base font-medium disabled:opacity-50'
+          style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.95)' }}
         >
           Отмена
         </button>
@@ -504,7 +523,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     <div
       className='fixed inset-0 z-50 flex flex-col'
       style={{
-        background: 'rgba(10,10,20,0.92)',
+        background: 'rgba(5,12,40,0.92)',
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
         paddingTop: 'env(safe-area-inset-top, 0px)',
@@ -516,7 +535,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
         className='flex items-center justify-between px-4 py-4 shrink-0'
         style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}
       >
-        <h1 className='text-lg font-medium text-white'>Админ панель</h1>
+        <h1 className='text-xl font-semibold text-white'>Админ панель</h1>
         <button
           onClick={onClose}
           className='w-8 h-8 flex items-center justify-center rounded-full text-white'
@@ -533,11 +552,11 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className='whitespace-nowrap px-3 py-1.5 rounded-xl text-sm font-medium shrink-0 transition-colors'
+            className='whitespace-nowrap px-4 py-2 rounded-xl text-base font-medium shrink-0 transition-colors'
             style={
               activeTab === tab.id
                 ? { background: '#f5c518', color: '#1a1a1a' }
-                : { background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }
+                : { background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.90)' }
             }
           >
             {tab.label}
@@ -551,7 +570,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
           <>
             <button
               onClick={() => setShowAddForm(v => !v)}
-              className='w-full py-2 rounded-xl text-sm font-medium mb-3'
+              className='w-full py-3 rounded-xl text-base font-medium mb-3'
               style={{ background: '#f5c518', color: '#1a1a1a' }}
             >
               Добавить расписание
@@ -570,7 +589,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
             )}
             {!schedulesLoading && schedulesError && <ErrorMessage message={schedulesError} />}
             {!schedulesLoading && !schedulesError && schedules.length === 0 && (
-              <p className='text-center py-8 text-sm' style={{ color: 'rgba(255,255,255,0.5)' }}>
+              <p className='text-center py-8 text-base' style={{ color: 'rgba(255,255,255,0.70)' }}>
                 Нет расписаний
               </p>
             )}
@@ -593,7 +612,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
             )}
             {!loading && error && <ErrorMessage message={error} />}
             {!loading && !error && reservations.length === 0 && (
-              <p className='text-center py-8 text-sm' style={{ color: 'rgba(255,255,255,0.5)' }}>
+              <p className='text-center py-8 text-base' style={{ color: 'rgba(255,255,255,0.70)' }}>
                 Нет записей
               </p>
             )}
