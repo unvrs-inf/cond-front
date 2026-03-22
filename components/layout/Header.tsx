@@ -1,8 +1,11 @@
 'use client'
 
 import Image from 'next/image'
+import { useState } from 'react'
 
 export function Header() {
+	const [copied, setCopied] = useState(false)
+
 	return (
 		<header className='fixed top-0 left-0 right-0 h-14 z-50 flex items-center justify-between px-4 py-10'>
 			<button
@@ -30,9 +33,23 @@ export function Header() {
 				<a
 					href='tel:+78000000000'
 					className='text-sm font-normal text-yellow-400'
+					onClick={(e) => {
+						if (window.Telegram?.WebApp) {
+							e.preventDefault()
+							navigator.clipboard.writeText('+78000000000').then(() => {
+								setCopied(true)
+								setTimeout(() => setCopied(false), 2000)
+							})
+						}
+					}}
 				>
 					+7 (800) 000-00-00
 				</a>
+				{copied && (
+					<span style={{ color: 'rgba(255,255,255,0.80)', marginLeft: 6, fontSize: '0.75rem' }}>
+						✓ Скопировано
+					</span>
+				)}
 			</div>
 		</header>
 	)
