@@ -6,6 +6,7 @@ import { useTelegram } from '@/components/providers/TelegramProvider'
 import { HeroBanner } from './HeroBanner'
 import { ServiceList } from './ServiceList'
 import { ServiceDetail } from './ServiceDetail'
+import { MyReservations } from './MyReservations'
 import { AdminButton } from '@/components/admin/AdminButton'
 import { AdminPanel } from '@/components/admin/AdminPanel'
 import { getUserInfo } from '@/lib/api/services'
@@ -30,6 +31,7 @@ export function HomeView() {
       ) : (
         <>
           <HeroBanner />
+          <MyReservations />
           <section className='p-4'>
             <ServiceList onSelect={setSelected} />
           </section>

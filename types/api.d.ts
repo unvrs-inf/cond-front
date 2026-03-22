@@ -43,6 +43,25 @@ export interface CreateScheduleDto {
   workEnding: string;
 }
 
+export interface ClientReservation {
+  id: number;
+  startDateTime: string;
+  endDateTime: string;
+  duration: number;
+  status: string;
+  typeOfService: {
+    id: number;
+    serviceName: string;
+    cost: number;
+    durationOfWork: number;
+    serviceDescription: string;
+    imageUrl: string;
+  };
+  client: { id: number; username: string };
+  clientPhoneNumber: string;
+  clientAddress: string;
+}
+
 export interface CreateReservationDto {
   start: string;
   serviceId: number;

@@ -7,7 +7,7 @@ export function Header() {
 		<header className='fixed top-0 left-0 right-0 h-14 z-50 flex items-center justify-between px-4 py-10'>
 			<div className='flex items-center px-3 py-1.5'>
 				<Image
-					src='/logo-2.svg'
+					src='/text-logo.svg'
 					height={80}
 					width={172}
 					alt='Лого'
@@ -22,10 +22,7 @@ export function Header() {
 					WebkitBackdropFilter: 'blur(12px)',
 				}}
 			>
-				<a
-					href='tel:+78000000000'
-					className='text-sm font-normal text-white'
-				>
+				<a href='tel:+78000000000' className='text-sm font-normal text-white'>
 					+7 (800) 000-00-00
 				</a>
 			</div>

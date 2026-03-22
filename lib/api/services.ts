@@ -1,4 +1,4 @@
-import type { ServiceTypesResponse, SchedulesResponse, Schedule, CreateReservationDto, CreateScheduleDto, UserInfoDto, AdminReservation, AdminReservationsResponse } from '@/types/api';
+import type { ServiceTypesResponse, SchedulesResponse, Schedule, CreateReservationDto, CreateScheduleDto, UserInfoDto, AdminReservation, AdminReservationsResponse, ClientReservation } from '@/types/api';
 import { ApiClient } from './client';
 
 /**
@@ -45,6 +45,14 @@ export async function createReservation(
 ): Promise<void> {
   const client = new ApiClient(initData);
   return client.post('/reservations/slot', data);
+}
+
+export async function getClientActiveReservations(initData: string): Promise<ClientReservation[]> {
+  return new ApiClient(initData).get<ClientReservation[]>('/reservations/active');
+}
+
+export async function cancelClientReservation(initData: string, id: number): Promise<ClientReservation> {
+  return new ApiClient(initData).patch<ClientReservation>(`/reservations/${id}/cancel`);
 }
 
 export async function getUserInfo(initData: string): Promise<UserInfoDto> {

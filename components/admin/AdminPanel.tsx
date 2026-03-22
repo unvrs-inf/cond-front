@@ -5,6 +5,8 @@ import type { AdminReservation, AdminReservationsResponse, Schedule, CreateSched
 import { useTelegram } from '@/components/providers/TelegramProvider'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { translateStatus } from '@/lib/utils/reservationStatus'
 import {
   getActiveReservations,
   getCreatedReservations,
@@ -52,6 +54,7 @@ function ReservationCard({ reservation, tab, initData, onUpdate, onRemove }: Res
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copiedPhone, setCopiedPhone] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   async function handleAction(action: 'complete' | 'cancel' | 'confirm') {
     setLoading(true)
@@ -87,7 +90,7 @@ function ReservationCard({ reservation, tab, initData, onUpdate, onRemove }: Res
           className='text-xs px-2 py-0.5 rounded-full'
           style={{ background: 'rgba(245,197,24,0.2)', color: '#f5c518' }}
         >
-          {reservation.status}
+          {translateStatus(reservation.status)}
         </span>
       </div>
 
@@ -156,7 +159,7 @@ function ReservationCard({ reservation, tab, initData, onUpdate, onRemove }: Res
             </button>
           )}
           <button
-            onClick={() => handleAction('cancel')}
+            onClick={() => setConfirmOpen(true)}
             disabled={loading}
             className='flex-1 py-1.5 rounded-xl text-sm font-medium disabled:opacity-50'
             style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)' }}
@@ -164,6 +167,13 @@ function ReservationCard({ reservation, tab, initData, onUpdate, onRemove }: Res
             {loading ? '...' : 'Отменить'}
           </button>
         </div>
+      )}
+      {confirmOpen && (
+        <ConfirmDialog
+          message='Вы точно хотите отменить заявку?'
+          onConfirm={() => { setConfirmOpen(false); handleAction('cancel') }}
+          onCancel={() => setConfirmOpen(false)}
+        />
       )}
     </div>
   )
