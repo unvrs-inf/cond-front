@@ -9,8 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@pbe/react-yandex-maps": "^1.2.5",
-    "@twa-dev/types": "^8.0.2",
+"@twa-dev/types": "^8.0.2",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3"

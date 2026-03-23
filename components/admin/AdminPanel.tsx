@@ -110,6 +110,7 @@ function ReservationCard({ reservation, tab, initData, onUpdate, onRemove }: Res
       <div className='text-sm space-y-2 mb-4' style={{ color: 'rgba(255,255,255,0.90)' }}>
         <div>Начало: {formatDateTime(reservation.startDateTime)}</div>
         <div>Конец: {formatDateTime(reservation.endDateTime)}</div>
+        <div>Стоимость: {reservation.typeOfService.cost.toLocaleString('ru-RU')} ₽</div>
         <div>Клиент: @{reservation.client.username} (ID: {reservation.client.id})</div>
         <div>
           Телефон:{' '}
