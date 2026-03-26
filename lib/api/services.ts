@@ -1,4 +1,4 @@
-import type { ServiceTypesResponse, SchedulesResponse, Schedule, CreateReservationDto, CreateScheduleDto, UserInfoDto, AdminReservation, AdminReservationsResponse, ClientReservation } from '@/types/api';
+import type { ServiceType, ServiceTypesResponse, SchedulesResponse, Schedule, CreateReservationDto, CreateScheduleDto, TypeOfServiceDto, UserInfoDto, AdminReservation, AdminReservationsResponse, ClientReservation } from '@/types/api';
 import { ApiClient } from './client';
 
 /**
@@ -22,6 +22,19 @@ export async function getServiceTypes(
   });
 
   return client.get<ServiceTypesResponse>(`/typeOfServices?${params.toString()}`);
+}
+
+export async function getAdminServiceTypes(
+  initData: string,
+  page: number = 0,
+  size: number = 20
+): Promise<ServiceTypesResponse> {
+  const client = new ApiClient(initData);
+  const params = new URLSearchParams({
+    page: page.toString(),
+    size: size.toString(),
+  });
+  return client.get<ServiceTypesResponse>(`/rest/admin-ui/typeOfServices?${params.toString()}`);
 }
 
 export async function getSchedules(initData: string): Promise<SchedulesResponse> {
@@ -97,4 +110,24 @@ export async function deleteSchedule(initData: string, id: number): Promise<Sche
 
 export async function updateSchedule(initData: string, id: number, dto: CreateScheduleDto): Promise<Schedule> {
   return new ApiClient(initData).patch<Schedule>(`/rest/admin-ui/schedules/${id}`, dto);
+}
+
+export async function createServiceType(initData: string, dto: TypeOfServiceDto): Promise<ServiceType> {
+  return new ApiClient(initData).post<ServiceType>('/rest/admin-ui/typeOfServices', dto);
+}
+
+export async function updateServiceType(initData: string, id: number, dto: TypeOfServiceDto): Promise<ServiceType> {
+  return new ApiClient(initData).patch<ServiceType>(`/rest/admin-ui/typeOfServices/${id}`, dto);
+}
+
+export async function deleteServiceType(initData: string, id: number): Promise<ServiceType> {
+  return new ApiClient(initData).delete<ServiceType>(`/rest/admin-ui/typeOfServices/${id}`);
+}
+
+export async function hideServiceType(initData: string, id: number): Promise<ServiceType> {
+  return new ApiClient(initData).patch<ServiceType>(`/rest/admin-ui/typeOfServices/${id}/nonActive`);
+}
+
+export async function showServiceType(initData: string, id: number): Promise<ServiceType> {
+  return new ApiClient(initData).patch<ServiceType>(`/rest/admin-ui/typeOfServices/${id}/active`);
 }
