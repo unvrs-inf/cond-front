@@ -95,6 +95,20 @@ function ReservationCard({
 						<span style={{ color: 'rgba(255,255,255,0.70)' }}>Адрес: </span>
 						{reservation.clientAddress}
 					</div>
+					{reservation.additionalServices && reservation.additionalServices.length > 0 && (
+						<div>
+							<span style={{ color: 'rgba(255,255,255,0.70)' }}>
+								Доп. услуги:{' '}
+							</span>
+							{reservation.additionalServices.map((s, i) => (
+								<span key={s.id}>
+									{i > 0 && ', '}
+									{s.serviceName} ({s.cost.toLocaleString('ru-RU')} ₽
+									{s.pricingFixed && s.unitName ? ` за ${s.unitName}` : ''})
+								</span>
+							))}
+						</div>
+					)}
 				</div>
 
 				<button

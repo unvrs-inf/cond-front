@@ -9,6 +9,7 @@ interface BookingFormProps {
 	service: ServiceType
 	selectedDate: string
 	selectedSlot: string
+	additionalServiceIds: number[]
 	onBack: () => void
 	onGoHome: () => void
 }
@@ -57,6 +58,7 @@ export function BookingForm({
 	service,
 	selectedDate,
 	selectedSlot,
+	additionalServiceIds,
 	onBack,
 	onGoHome,
 }: BookingFormProps) {
@@ -121,6 +123,7 @@ export function BookingForm({
 				clientName: fields.name,
 				clientPhoneNumber: fields.phone,
 				clientAddress,
+				additionalServicesIds: additionalServiceIds.length > 0 ? additionalServiceIds : undefined,
 			})
 			setSubmitSuccess(true)
 		} catch (err) {

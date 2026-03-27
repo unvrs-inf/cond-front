@@ -55,6 +55,30 @@ export interface TypeOfServiceDto {
 	unitName?: string
 }
 
+export interface AdditionalService {
+	id: number
+	serviceName: string
+	serviceDescription?: string
+	pricingFixed: boolean
+	cost: number
+	unitName?: string
+	imageUrl?: string
+	active: boolean
+}
+
+export interface AdditionalServiceDto {
+	serviceName: string
+	pricingFixed: boolean
+	cost: number
+	unitName?: string
+	serviceDescription?: string
+}
+
+export interface AdditionalServicesResponse {
+	content: AdditionalService[]
+	page: PaginationInfo
+}
+
 export interface ClientReservation {
 	id: number
 	startDateTime: string
@@ -79,6 +103,7 @@ export interface ClientReservation {
 	}
 	clientPhoneNumber: string
 	clientAddress: string
+	additionalServices?: AdditionalService[]
 }
 
 export interface CreateReservationDto {
@@ -87,6 +112,7 @@ export interface CreateReservationDto {
 	clientName: string
 	clientPhoneNumber: string
 	clientAddress: string
+	additionalServicesIds?: number[]
 }
 
 export interface UserInfoDto {
@@ -119,6 +145,7 @@ export interface AdminReservation {
 	}
 	clientPhoneNumber: string
 	clientAddress: string
+	additionalServices?: AdditionalService[]
 }
 
 export interface AdminReservationsResponse {

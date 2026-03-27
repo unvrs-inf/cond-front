@@ -6,6 +6,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { getAvailableSlots, getSchedules } from '@/lib/api/services'
 import type { Schedule, ServiceType } from '@/types/api'
 import { useEffect, useState } from 'react'
+import { AdditionalServicesSelector } from './AdditionalServicesSelector'
 import { BookingForm } from './BookingForm'
 
 interface BookingSlotsProps {
@@ -36,7 +37,9 @@ export function BookingSlots({ service, onBack, onGoHome }: BookingSlotsProps) {
 	const [loadingSchedules, setLoadingSchedules] = useState(true)
 	const [loadingSlots, setLoadingSlots] = useState(false)
 	const [error, setError] = useState<string | null>(null)
+	const [showAdditionalServices, setShowAdditionalServices] = useState(false)
 	const [showForm, setShowForm] = useState(false)
+	const [selectedAdditionalServiceIds, setSelectedAdditionalServiceIds] = useState<number[]>([])
 
 	useEffect(() => {
 		if (!isReady) return
@@ -75,8 +78,21 @@ export function BookingSlots({ service, onBack, onGoHome }: BookingSlotsProps) {
 				service={service}
 				selectedDate={selectedDate}
 				selectedSlot={selectedSlot}
+				additionalServiceIds={selectedAdditionalServiceIds}
 				onBack={() => setShowForm(false)}
 				onGoHome={onGoHome}
+			/>
+		)
+	}
+
+	if (showAdditionalServices && selectedDate && selectedSlot) {
+		return (
+			<AdditionalServicesSelector
+				onBack={() => setShowAdditionalServices(false)}
+				onContinue={ids => {
+					setSelectedAdditionalServiceIds(ids)
+					setShowForm(true)
+				}}
 			/>
 		)
 	}
@@ -159,9 +175,6 @@ export function BookingSlots({ service, onBack, onGoHome }: BookingSlotsProps) {
 				className='fixed bottom-6 left-0 right-0 flex gap-2 p-2'
 				style={{
 					paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom, 0px))',
-					// background: 'rgba(15,15,25,0)',
-					// backdropFilter: 'blur(16px)',
-					// WebkitBackdropFilter: 'blur(16px)',
 				}}
 			>
 				<button
@@ -177,7 +190,7 @@ export function BookingSlots({ service, onBack, onGoHome }: BookingSlotsProps) {
 				</button>
 				{selectedSlot && (
 					<button
-						onClick={() => setShowForm(true)}
+						onClick={() => setShowAdditionalServices(true)}
 						className='flex-[2] py-4 rounded-3xl font-semibold text-black cursor-pointer transition-opacity duration-150 hover:opacity-80'
 						style={{ background: '#f5c518' }}
 					>

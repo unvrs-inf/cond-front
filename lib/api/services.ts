@@ -1,4 +1,4 @@
-import type { ServiceType, ServiceTypesResponse, SchedulesResponse, Schedule, CreateReservationDto, CreateScheduleDto, TypeOfServiceDto, UserInfoDto, AdminReservation, AdminReservationsResponse, ClientReservation } from '@/types/api';
+import type { ServiceType, ServiceTypesResponse, SchedulesResponse, Schedule, CreateReservationDto, CreateScheduleDto, TypeOfServiceDto, UserInfoDto, AdminReservation, AdminReservationsResponse, ClientReservation, AdditionalService, AdditionalServiceDto, AdditionalServicesResponse } from '@/types/api';
 import { ApiClient } from './client';
 
 /**
@@ -130,4 +130,57 @@ export async function hideServiceType(initData: string, id: number): Promise<Ser
 
 export async function showServiceType(initData: string, id: number): Promise<ServiceType> {
   return new ApiClient(initData).patch<ServiceType>(`/rest/admin-ui/typeOfServices/${id}/active`);
+}
+
+// The client-facing endpoint uses Spring HATEOAS PagedModel — content may be in
+// _embedded.additionalServiceList. We normalise both formats here.
+interface _AdditionalServicesRaw {
+  content?: AdditionalService[]
+  _embedded?: { additionalServiceList?: AdditionalService[] }
+  page: AdditionalServicesResponse['page']
+}
+
+export async function getAdditionalServices(
+  initData: string,
+  page: number = 0,
+  size: number = 20
+): Promise<AdditionalServicesResponse> {
+  const client = new ApiClient(initData);
+  const params = new URLSearchParams({ page: page.toString(), size: size.toString() });
+  const raw = await client.get<_AdditionalServicesRaw>(`/additionalServices?${params}`);
+  const content = raw.content ?? raw._embedded?.additionalServiceList ?? [];
+  return { content, page: raw.page };
+}
+
+export async function getAdminAdditionalServices(
+  initData: string,
+  page: number = 0,
+  size: number = 20
+): Promise<AdditionalServicesResponse> {
+  const client = new ApiClient(initData);
+  const params = new URLSearchParams({ page: page.toString(), size: size.toString() });
+  return client.get<AdditionalServicesResponse>(`/rest/admin-ui/additionalServices?${params}`);
+}
+
+export async function createAdditionalService(
+  initData: string,
+  dto: AdditionalServiceDto
+): Promise<AdditionalService> {
+  return new ApiClient(initData).post<AdditionalService>('/rest/admin-ui/additionalServices', dto);
+}
+
+export async function updateAdditionalService(
+  initData: string,
+  id: number,
+  dto: AdditionalServiceDto
+): Promise<AdditionalService> {
+  return new ApiClient(initData).patch<AdditionalService>(`/rest/admin-ui/additionalServices/${id}`, dto);
+}
+
+export async function hideAdditionalService(initData: string, id: number): Promise<AdditionalService> {
+  return new ApiClient(initData).patch<AdditionalService>(`/rest/admin-ui/additionalServices/${id}/nonActive`);
+}
+
+export async function showAdditionalService(initData: string, id: number): Promise<AdditionalService> {
+  return new ApiClient(initData).patch<AdditionalService>(`/rest/admin-ui/additionalServices/${id}/active`);
 }

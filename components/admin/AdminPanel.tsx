@@ -8,22 +8,29 @@ import {
 	cancelReservation,
 	completeReservation,
 	confirmReservation,
+	createAdditionalService,
 	createSchedule,
 	createServiceType,
 	deleteSchedule,
 	getActiveReservations,
+	getAdminAdditionalServices,
 	getAdminServiceTypes,
 	getCancelledReservations,
 	getCompletedReservations,
 	getCreatedReservations,
 	getSchedules,
+	hideAdditionalService,
 	hideServiceType,
+	showAdditionalService,
 	showServiceType,
+	updateAdditionalService,
 	updateSchedule,
 	updateServiceType,
 } from '@/lib/api/services'
 import { translateStatus } from '@/lib/utils/reservationStatus'
 import type {
+	AdditionalService,
+	AdditionalServiceDto,
 	AdminReservation,
 	AdminReservationsResponse,
 	CreateScheduleDto,
@@ -40,6 +47,7 @@ type Tab =
 	| 'completed'
 	| 'schedules'
 	| 'services'
+	| 'additionalServices'
 
 const TABS: { id: Tab; label: string }[] = [
 	{ id: 'active', label: 'Активные' },
@@ -48,6 +56,7 @@ const TABS: { id: Tab; label: string }[] = [
 	{ id: 'completed', label: 'Выполненные' },
 	{ id: 'schedules', label: 'Расписание' },
 	{ id: 'services', label: 'Типы услуг' },
+	{ id: 'additionalServices', label: 'Доп. услуги' },
 ]
 
 function formatDateTime(dt: string): string {
@@ -216,6 +225,20 @@ function ReservationCard({
 						{reservation.clientAddress}
 					</a>
 				</div>
+				{reservation.additionalServices && reservation.additionalServices.length > 0 && (
+					<div>
+						<span style={{ color: 'rgba(255,255,255,0.70)' }}>Доп. услуги:</span>
+						<ul className='mt-1 space-y-0.5'>
+							{reservation.additionalServices.map(s => (
+								<li key={s.id}>
+									{s.serviceName} —{' '}
+									{s.cost.toLocaleString('ru-RU')} ₽
+									{!s.pricingFixed && s.unitName ? ` за ${s.unitName}` : ''}
+								</li>
+							))}
+						</ul>
+					</div>
+				)}
 			</div>
 
 			{error && <p className='text-sm text-red-400 mb-2'>{error}</p>}
@@ -1064,6 +1087,392 @@ function AddServiceTypeForm({
 	)
 }
 
+interface AdditionalServiceCardProps {
+	service: AdditionalService
+	initData: string
+	onUpdate: (updated: AdditionalService) => void
+}
+
+function AdditionalServiceCard({
+	service,
+	initData,
+	onUpdate,
+}: AdditionalServiceCardProps) {
+	const [loading, setLoading] = useState(false)
+	const [error, setError] = useState<string | null>(null)
+	const [editing, setEditing] = useState(false)
+	const [editName, setEditName] = useState(service.serviceName)
+	const [editCost, setEditCost] = useState(String(service.cost))
+	const [editDescription, setEditDescription] = useState(service.serviceDescription ?? '')
+	const [editPricingFixed, setEditPricingFixed] = useState(service.pricingFixed)
+	const [editUnitName, setEditUnitName] = useState(service.unitName ?? '')
+
+	const inputStyle = {
+		background: 'rgba(255,255,255,0.1)',
+		color: 'white',
+		borderRadius: 12,
+		border: '1px solid rgba(255,255,255,0.15)',
+		padding: '8px 12px',
+		width: '100%',
+		fontSize: '0.875rem',
+	}
+
+	async function handleToggleActive() {
+		setLoading(true)
+		setError(null)
+		try {
+			const updated = service.active
+				? await hideAdditionalService(initData, service.id)
+				: await showAdditionalService(initData, service.id)
+			onUpdate(updated)
+		} catch {
+			setError('Ошибка при изменении статуса')
+		} finally {
+			setLoading(false)
+		}
+	}
+
+	async function handleSave() {
+		if (!editPricingFixed && !editUnitName.trim()) {
+			setError('Укажите единицу измерения')
+			return
+		}
+		setLoading(true)
+		setError(null)
+		try {
+			const dto: AdditionalServiceDto = {
+				serviceName: editName,
+				cost: Number(editCost),
+				pricingFixed: editPricingFixed,
+				serviceDescription: editDescription || undefined,
+				unitName: !editPricingFixed ? editUnitName.trim() : undefined,
+			}
+			const updated = await updateAdditionalService(initData, service.id, dto)
+			onUpdate(updated)
+			setEditing(false)
+		} catch {
+			setError('Ошибка при сохранении')
+		} finally {
+			setLoading(false)
+		}
+	}
+
+	return (
+		<div
+			className='rounded-2xl p-5 mb-4'
+			style={{
+				background: 'rgba(100,150,255,0.10)',
+				backdropFilter: 'blur(8px)',
+				WebkitBackdropFilter: 'blur(8px)',
+			}}
+		>
+			<div className='flex items-center justify-between mb-2'>
+				<span className='text-base font-semibold' style={{ color: '#f5c518' }}>
+					{editing ? editName : service.serviceName}
+				</span>
+				<span className='text-sm' style={{ color: 'rgba(255,255,255,0.80)' }}>
+					#{service.id}
+				</span>
+			</div>
+			{editing ? (
+				<div className='space-y-3 mb-3'>
+					<div>
+						<label className='block text-sm mb-1' style={{ color: 'rgba(255,255,255,0.80)' }}>
+							Название
+						</label>
+						<input
+							type='text'
+							value={editName}
+							onChange={e => setEditName(e.target.value)}
+							style={inputStyle}
+						/>
+					</div>
+					<div>
+						<label className='block text-sm mb-1' style={{ color: 'rgba(255,255,255,0.80)' }}>
+							Стоимость (₽)
+						</label>
+						<input
+							type='number'
+							value={editCost}
+							onChange={e => setEditCost(e.target.value)}
+							style={inputStyle}
+						/>
+					</div>
+					<div>
+						<label className='block text-sm mb-1' style={{ color: 'rgba(255,255,255,0.80)' }}>
+							Описание
+						</label>
+						<textarea
+							value={editDescription}
+							onChange={e => setEditDescription(e.target.value)}
+							rows={3}
+							style={{ ...inputStyle, resize: 'none' }}
+						/>
+					</div>
+					<div>
+						<label className='block text-sm mb-2' style={{ color: 'rgba(255,255,255,0.80)' }}>
+							Тип цены
+						</label>
+						<div className='flex gap-3'>
+							<label
+								className='flex items-center gap-2 cursor-pointer'
+								style={{ color: 'rgba(255,255,255,0.90)', fontSize: '0.875rem' }}
+							>
+								<input
+									type='radio'
+									checked={editPricingFixed}
+									onChange={() => setEditPricingFixed(true)}
+								/>
+								Фиксированная
+							</label>
+							<label
+								className='flex items-center gap-2 cursor-pointer'
+								style={{ color: 'rgba(255,255,255,0.90)', fontSize: '0.875rem' }}
+							>
+								<input
+									type='radio'
+									checked={!editPricingFixed}
+									onChange={() => setEditPricingFixed(false)}
+								/>
+								За единицу
+							</label>
+						</div>
+					</div>
+					{!editPricingFixed && (
+						<div>
+							<label className='block text-sm mb-1' style={{ color: 'rgba(255,255,255,0.80)' }}>
+								Единица измерения *
+							</label>
+							<input
+								type='text'
+								value={editUnitName}
+								onChange={e => setEditUnitName(e.target.value)}
+								placeholder='например: кг'
+								style={inputStyle}
+							/>
+						</div>
+					)}
+				</div>
+			) : (
+				<div className='text-sm space-y-1 mb-3' style={{ color: 'rgba(255,255,255,0.90)' }}>
+					<div>Статус: {service.active ? 'Активно' : 'Скрыто'}</div>
+					<div>
+						Стоимость: {service.cost.toLocaleString('ru-RU')} ₽
+						{!service.pricingFixed && service.unitName ? ` за ${service.unitName}` : ''}
+					</div>
+					<div>Тип цены: {service.pricingFixed ? 'Фиксированная' : 'За единицу'}</div>
+					{service.serviceDescription && (
+						<div>Описание: {service.serviceDescription}</div>
+					)}
+				</div>
+			)}
+
+			{error && <p className='text-sm text-red-400 mb-2'>{error}</p>}
+			{editing ? (
+				<div className='flex gap-2'>
+					<button
+						onClick={handleSave}
+						disabled={loading}
+						className='flex-1 py-2.5 rounded-xl text-base font-medium disabled:opacity-50'
+						style={{ background: '#f5c518', color: '#1a1a1a' }}
+					>
+						{loading ? '...' : 'Сохранить'}
+					</button>
+					<button
+						onClick={() => { setEditing(false); setError(null) }}
+						disabled={loading}
+						className='flex-1 py-2.5 rounded-xl text-base font-medium disabled:opacity-50'
+						style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.95)' }}
+					>
+						Отмена
+					</button>
+				</div>
+			) : (
+				<div className='flex gap-2'>
+					<button
+						onClick={() => setEditing(true)}
+						disabled={loading}
+						className='flex-1 py-2.5 rounded-xl text-base font-medium disabled:opacity-50'
+						style={{ background: '#f5c518', color: '#1a1a1a' }}
+					>
+						Изменить
+					</button>
+					<button
+						onClick={handleToggleActive}
+						disabled={loading}
+						className='flex-1 py-2.5 rounded-xl text-base font-medium disabled:opacity-50'
+						style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.95)' }}
+					>
+						{loading ? '...' : service.active ? 'Скрыть' : 'Отобразить'}
+					</button>
+				</div>
+			)}
+		</div>
+	)
+}
+
+interface AddAdditionalServiceFormProps {
+	initData: string
+	onAdd: (service: AdditionalService) => void
+	onCancel: () => void
+}
+
+function AddAdditionalServiceForm({
+	initData,
+	onAdd,
+	onCancel,
+}: AddAdditionalServiceFormProps) {
+	const [name, setName] = useState('')
+	const [cost, setCost] = useState('')
+	const [description, setDescription] = useState('')
+	const [pricingFixed, setPricingFixed] = useState(false)
+	const [unitName, setUnitName] = useState('')
+	const [loading, setLoading] = useState(false)
+	const [error, setError] = useState<string | null>(null)
+
+	const inputStyle = {
+		background: 'rgba(255,255,255,0.1)',
+		color: 'white',
+		borderRadius: 12,
+		border: '1px solid rgba(255,255,255,0.15)',
+		padding: '8px 12px',
+		width: '100%',
+		fontSize: '0.875rem',
+	}
+
+	async function handleSave() {
+		if (!pricingFixed && !unitName.trim()) {
+			setError('Укажите единицу измерения')
+			return
+		}
+		setLoading(true)
+		setError(null)
+		try {
+			const dto: AdditionalServiceDto = {
+				serviceName: name,
+				cost: Number(cost),
+				pricingFixed,
+				serviceDescription: description || undefined,
+				unitName: !pricingFixed ? unitName.trim() : undefined,
+			}
+			const created = await createAdditionalService(initData, dto)
+			onAdd(created)
+		} catch {
+			setError('Ошибка при сохранении')
+			setLoading(false)
+		}
+	}
+
+	return (
+		<div
+			className='rounded-2xl p-5 mb-4'
+			style={{
+				background: 'rgba(100,150,255,0.10)',
+				backdropFilter: 'blur(8px)',
+				WebkitBackdropFilter: 'blur(8px)',
+			}}
+		>
+			<div className='space-y-3 mb-3'>
+				<div>
+					<label className='block text-sm mb-1' style={{ color: 'rgba(255,255,255,0.80)' }}>
+						Название
+					</label>
+					<input
+						type='text'
+						value={name}
+						onChange={e => setName(e.target.value)}
+						style={inputStyle}
+					/>
+				</div>
+				<div>
+					<label className='block text-sm mb-1' style={{ color: 'rgba(255,255,255,0.80)' }}>
+						Стоимость (₽)
+					</label>
+					<input
+						type='number'
+						value={cost}
+						onChange={e => setCost(e.target.value)}
+						style={inputStyle}
+					/>
+				</div>
+				<div>
+					<label className='block text-sm mb-1' style={{ color: 'rgba(255,255,255,0.80)' }}>
+						Описание
+					</label>
+					<textarea
+						value={description}
+						onChange={e => setDescription(e.target.value)}
+						rows={3}
+						style={{ ...inputStyle, resize: 'none' }}
+					/>
+				</div>
+				<div>
+					<label className='block text-sm mb-2' style={{ color: 'rgba(255,255,255,0.80)' }}>
+						Тип цены
+					</label>
+					<div className='flex gap-3'>
+						<label
+							className='flex items-center gap-2 cursor-pointer'
+							style={{ color: 'rgba(255,255,255,0.90)', fontSize: '0.875rem' }}
+						>
+							<input
+								type='radio'
+								checked={pricingFixed}
+								onChange={() => setPricingFixed(true)}
+							/>
+							Фиксированная
+						</label>
+						<label
+							className='flex items-center gap-2 cursor-pointer'
+							style={{ color: 'rgba(255,255,255,0.90)', fontSize: '0.875rem' }}
+						>
+							<input
+								type='radio'
+								checked={!pricingFixed}
+								onChange={() => setPricingFixed(false)}
+							/>
+							За единицу
+						</label>
+					</div>
+				</div>
+				{!pricingFixed && (
+					<div>
+						<label className='block text-sm mb-1' style={{ color: 'rgba(255,255,255,0.80)' }}>
+							Единица измерения *
+						</label>
+						<input
+							type='text'
+							value={unitName}
+							onChange={e => setUnitName(e.target.value)}
+							placeholder='например: кг'
+							style={inputStyle}
+						/>
+					</div>
+				)}
+			</div>
+			{error && <p className='text-sm text-red-400 mb-2'>{error}</p>}
+			<div className='flex gap-2'>
+				<button
+					onClick={handleSave}
+					disabled={loading}
+					className='flex-1 py-2.5 rounded-xl text-base font-medium disabled:opacity-50'
+					style={{ background: '#f5c518', color: '#1a1a1a' }}
+				>
+					{loading ? '...' : 'Сохранить'}
+				</button>
+				<button
+					onClick={onCancel}
+					disabled={loading}
+					className='flex-1 py-2.5 rounded-xl text-base font-medium disabled:opacity-50'
+					style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.95)' }}
+				>
+					Отмена
+				</button>
+			</div>
+		</div>
+	)
+}
+
 interface AdminPanelProps {
 	onClose: () => void
 }
@@ -1087,8 +1496,13 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 	)
 	const [showAddServiceForm, setShowAddServiceForm] = useState(false)
 
+	const [additionalServices, setAdditionalServices] = useState<AdditionalService[]>([])
+	const [additionalServicesLoading, setAdditionalServicesLoading] = useState(false)
+	const [additionalServicesError, setAdditionalServicesError] = useState<string | null>(null)
+	const [showAddAdditionalServiceForm, setShowAddAdditionalServiceForm] = useState(false)
+
 	const fetchReservations = useCallback(async () => {
-		if (!isReady || activeTab === 'schedules' || activeTab === 'services')
+		if (!isReady || activeTab === 'schedules' || activeTab === 'services' || activeTab === 'additionalServices')
 			return
 		setLoading(true)
 		setError(null)
@@ -1143,6 +1557,25 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 		}
 	}, [activeTab, initData, isReady])
 
+	const fetchAdditionalServices = useCallback(async () => {
+		if (!isReady || activeTab !== 'additionalServices') return
+		setAdditionalServicesLoading(true)
+		setAdditionalServicesError(null)
+		try {
+			const first = await getAdminAdditionalServices(initData, 0)
+			const all = [...first.content]
+			for (let p = 1; p < first.page.totalPages; p++) {
+				const page = await getAdminAdditionalServices(initData, p)
+				all.push(...page.content)
+			}
+			setAdditionalServices(all)
+		} catch {
+			setAdditionalServicesError('Не удалось загрузить доп. услуги')
+		} finally {
+			setAdditionalServicesLoading(false)
+		}
+	}, [activeTab, initData, isReady])
+
 	useEffect(() => {
 		fetchReservations()
 	}, [fetchReservations])
@@ -1154,6 +1587,10 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 	useEffect(() => {
 		fetchServiceTypes()
 	}, [fetchServiceTypes])
+
+	useEffect(() => {
+		fetchAdditionalServices()
+	}, [fetchAdditionalServices])
 
 	function handleUpdate(updated: AdminReservation) {
 		setReservations(prev => prev.map(r => (r.id === updated.id ? updated : r)))
@@ -1183,6 +1620,15 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 
 	function handleServiceTypeUpdate(updated: ServiceType) {
 		setServiceTypes(prev => prev.map(s => (s.id === updated.id ? updated : s)))
+	}
+
+	function handleAdditionalServiceAdd(service: AdditionalService) {
+		setAdditionalServices(prev => [...prev, service])
+		setShowAddAdditionalServiceForm(false)
+	}
+
+	function handleAdditionalServiceUpdate(updated: AdditionalService) {
+		setAdditionalServices(prev => prev.map(s => (s.id === updated.id ? updated : s)))
 	}
 
 	return (
@@ -1235,7 +1681,52 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 
 			{/* Content */}
 			<div className='flex-1 overflow-y-auto px-4 py-3'>
-				{activeTab === 'services' ? (
+				{activeTab === 'additionalServices' ? (
+					<>
+						<button
+							onClick={() => setShowAddAdditionalServiceForm(v => !v)}
+							className='w-full py-3 rounded-xl text-base font-medium mb-3'
+							style={{ background: '#f5c518', color: '#1a1a1a' }}
+						>
+							Добавить доп. услугу
+						</button>
+						{showAddAdditionalServiceForm && (
+							<AddAdditionalServiceForm
+								initData={initData}
+								onAdd={handleAdditionalServiceAdd}
+								onCancel={() => setShowAddAdditionalServiceForm(false)}
+							/>
+						)}
+						{additionalServicesLoading && (
+							<div className='flex justify-center py-8'>
+								<LoadingSpinner />
+							</div>
+						)}
+						{!additionalServicesLoading && additionalServicesError && (
+							<ErrorMessage message={additionalServicesError} />
+						)}
+						{!additionalServicesLoading &&
+							!additionalServicesError &&
+							additionalServices.length === 0 && (
+								<p
+									className='text-center py-8 text-base'
+									style={{ color: 'rgba(255,255,255,0.70)' }}
+								>
+									Нет доп. услуг
+								</p>
+							)}
+						{!additionalServicesLoading &&
+							!additionalServicesError &&
+							additionalServices.map(s => (
+								<AdditionalServiceCard
+									key={s.id}
+									service={s}
+									initData={initData}
+									onUpdate={handleAdditionalServiceUpdate}
+								/>
+							))}
+					</>
+				) : activeTab === 'services' ? (
 					<>
 						<button
 							onClick={() => setShowAddServiceForm(v => !v)}
