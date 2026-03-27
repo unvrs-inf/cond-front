@@ -24,7 +24,7 @@ export function HeroBanner() {
 
 			{/* Frosted glass карточка */}
 			<div
-				className='w-full rounded-4xl flex flex-col items-center pt-16 pb-8 px-6'
+				className='w-full rounded-4xl flex flex-col items-center pt-16 pb-8 px-2'
 				style={{
 					background: 'rgba(5,15,50,0.55)',
 					backdropFilter: 'blur(12px)',

@@ -64,7 +64,7 @@ export function ServiceDetail({ service, onBack }: ServiceDetailProps) {
 						{service.serviceName}
 					</p>
 					<p className='text-white text-lg font-semibold'>
-						{service.cost.toLocaleString('ru-RU')} ₽
+						{service.cost.toLocaleString('ru-RU')} ₽{!service.priceFixed && service.unitName ? ` за ${service.unitName}` : ''}
 					</p>
 				</div>
 			</div>

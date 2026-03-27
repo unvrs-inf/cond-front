@@ -12,15 +12,15 @@ import {
 	createServiceType,
 	deleteSchedule,
 	getActiveReservations,
+	getAdminServiceTypes,
 	getCancelledReservations,
 	getCompletedReservations,
 	getCreatedReservations,
 	getSchedules,
-	getAdminServiceTypes,
-	updateSchedule,
-	updateServiceType,
 	hideServiceType,
 	showServiceType,
+	updateSchedule,
+	updateServiceType,
 } from '@/lib/api/services'
 import { translateStatus } from '@/lib/utils/reservationStatus'
 import type {
@@ -128,12 +128,15 @@ function ReservationCard({
 				WebkitBackdropFilter: 'blur(8px)',
 			}}
 		>
-			<div className='flex items-start justify-between mb-2'>
-				<span className='text-base font-semibold' style={{ color: '#f5c518' }}>
+			<div className='flex flex-col items-start gap-2 justify-between mb-2'>
+				<span
+					className='text-base text-nowrap font-semibold'
+					style={{ color: '#f5c518' }}
+				>
 					#{reservation.id} — {reservation.typeOfService.serviceName}
 				</span>
 				<span
-					className='text-sm px-2.5 py-0.5 rounded-full'
+					className='text-xs text-nowrap px-2.5 py-0.5 rounded-full'
 					style={{ background: 'rgba(245,197,24,0.2)', color: '#f5c518' }}
 				>
 					{translateStatus(reservation.status)}
@@ -605,6 +608,8 @@ function ServiceTypeCard({
 	const [editDescription, setEditDescription] = useState(
 		serviceType.serviceDescription ?? '',
 	)
+	const [editPriceFixed, setEditPriceFixed] = useState(serviceType.priceFixed)
+	const [editUnitName, setEditUnitName] = useState(serviceType.unitName ?? '')
 
 	const inputStyle = {
 		background: 'rgba(255,255,255,0.1)',
@@ -632,14 +637,20 @@ function ServiceTypeCard({
 	}
 
 	async function handleSave() {
+		if (!editPriceFixed && !editUnitName.trim()) {
+			setError('Укажите единицу измерения для нефиксированной цены')
+			return
+		}
 		setLoading(true)
 		setError(null)
 		try {
 			const dto: TypeOfServiceDto = {
 				serviceName: editName,
 				cost: Number(editCost),
+				priceFixed: editPriceFixed,
 				durationOfWork: Number(editDuration),
 				serviceDescription: editDescription || undefined,
+				unitName: editPriceFixed ? undefined : editUnitName.trim(),
 			}
 			const updated = await updateServiceType(initData, serviceType.id, dto)
 			onUpdate(updated)
@@ -726,6 +737,61 @@ function ServiceTypeCard({
 							style={{ ...inputStyle, resize: 'none' }}
 						/>
 					</div>
+					<div>
+						<label
+							className='block text-sm mb-2'
+							style={{ color: 'rgba(255,255,255,0.80)' }}
+						>
+							Тип цены
+						</label>
+						<div className='flex gap-3'>
+							<label
+								className='flex items-center gap-2 cursor-pointer'
+								style={{
+									color: 'rgba(255,255,255,0.90)',
+									fontSize: '0.875rem',
+								}}
+							>
+								<input
+									type='radio'
+									checked={editPriceFixed}
+									onChange={() => setEditPriceFixed(true)}
+								/>
+								Фиксированная
+							</label>
+							<label
+								className='flex items-center gap-2 cursor-pointer'
+								style={{
+									color: 'rgba(255,255,255,0.90)',
+									fontSize: '0.875rem',
+								}}
+							>
+								<input
+									type='radio'
+									checked={!editPriceFixed}
+									onChange={() => setEditPriceFixed(false)}
+								/>
+								За единицу
+							</label>
+						</div>
+					</div>
+					{!editPriceFixed && (
+						<div>
+							<label
+								className='block text-sm mb-1'
+								style={{ color: 'rgba(255,255,255,0.80)' }}
+							>
+								Единица измерения *
+							</label>
+							<input
+								type='text'
+								value={editUnitName}
+								onChange={e => setEditUnitName(e.target.value)}
+								placeholder='например: 100 грамм'
+								style={inputStyle}
+							/>
+						</div>
+					)}
 				</div>
 			) : (
 				<div
@@ -733,7 +799,15 @@ function ServiceTypeCard({
 					style={{ color: 'rgba(255,255,255,0.90)' }}
 				>
 					<div>Статус: {serviceType.active ? 'Активно' : 'Скрыто'}</div>
-					<div>Стоимость: {serviceType.cost.toLocaleString('ru-RU')} ₽</div>
+					<div>
+						Стоимость: {serviceType.cost.toLocaleString('ru-RU')} ₽
+						{!serviceType.priceFixed && serviceType.unitName
+							? ` за ${serviceType.unitName}`
+							: ''}
+					</div>
+					<div>
+						Тип цены: {serviceType.priceFixed ? 'Фиксированная' : 'За единицу'}
+					</div>
 					<div>Длительность: {serviceType.durationOfWork} мин</div>
 					{serviceType.serviceDescription && (
 						<div>Описание: {serviceType.serviceDescription}</div>
@@ -809,6 +883,8 @@ function AddServiceTypeForm({
 	const [cost, setCost] = useState('')
 	const [duration, setDuration] = useState('')
 	const [description, setDescription] = useState('')
+	const [priceFixed, setPriceFixed] = useState(true)
+	const [unitName, setUnitName] = useState('')
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 
@@ -823,14 +899,20 @@ function AddServiceTypeForm({
 	}
 
 	async function handleSave() {
+		if (!priceFixed && !unitName.trim()) {
+			setError('Укажите единицу измерения для нефиксированной цены')
+			return
+		}
 		setLoading(true)
 		setError(null)
 		try {
 			const dto: TypeOfServiceDto = {
 				serviceName: name,
 				cost: Number(cost),
+				priceFixed,
 				durationOfWork: Number(duration),
 				serviceDescription: description || undefined,
+				unitName: priceFixed ? undefined : unitName.trim(),
 			}
 			const created = await createServiceType(initData, dto)
 			onAdd(created)
@@ -906,6 +988,55 @@ function AddServiceTypeForm({
 						style={{ ...inputStyle, resize: 'none' }}
 					/>
 				</div>
+				<div>
+					<label
+						className='block text-sm mb-2'
+						style={{ color: 'rgba(255,255,255,0.80)' }}
+					>
+						Тип цены
+					</label>
+					<div className='flex gap-3'>
+						<label
+							className='flex items-center gap-2 cursor-pointer'
+							style={{ color: 'rgba(255,255,255,0.90)', fontSize: '0.875rem' }}
+						>
+							<input
+								type='radio'
+								checked={priceFixed}
+								onChange={() => setPriceFixed(true)}
+							/>
+							Фиксированная
+						</label>
+						<label
+							className='flex items-center gap-2 cursor-pointer'
+							style={{ color: 'rgba(255,255,255,0.90)', fontSize: '0.875rem' }}
+						>
+							<input
+								type='radio'
+								checked={!priceFixed}
+								onChange={() => setPriceFixed(false)}
+							/>
+							За единицу
+						</label>
+					</div>
+				</div>
+				{!priceFixed && (
+					<div>
+						<label
+							className='block text-sm mb-1'
+							style={{ color: 'rgba(255,255,255,0.80)' }}
+						>
+							Единица измерения *
+						</label>
+						<input
+							type='text'
+							value={unitName}
+							onChange={e => setUnitName(e.target.value)}
+							placeholder='например: 100 грамм'
+							style={inputStyle}
+						/>
+					</div>
+				)}
 			</div>
 			{error && <p className='text-sm text-red-400 mb-2'>{error}</p>}
 			<div className='flex gap-2'>
@@ -1145,7 +1276,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 									key={s.id}
 									serviceType={s}
 									initData={initData}
-										onUpdate={handleServiceTypeUpdate}
+									onUpdate={handleServiceTypeUpdate}
 								/>
 							))}
 					</>

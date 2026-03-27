@@ -33,7 +33,7 @@ Next.js App Router (not Pages Router). All routes are in `app/`:
 
 ### Fonts
 
-**Nunito** loaded from `public/fonts/` via `next/font/local`. Three weights: 400, 500, 600. CSS variable: `--font-nunito`. `KumbhSans-Regular.woff2` is present but not yet wired up.
+**Nunito** loaded from `public/fonts/` via `next/font/local`. Three weights: 400, 500, 600. CSS variable: `--font-nunito`. `KumbhSans-Regular.woff2` and OpenSans (Light/Regular/Medium woff2) are present in `public/fonts/` but not yet wired up.
 
 ## Telegram Integration
 
@@ -60,8 +60,11 @@ Next.js App Router (not Pages Router). All routes are in `app/`:
   - `createSchedule` / `deleteSchedule` / `updateSchedule` — schedule CRUD
   - `getClientActiveReservations(initData)` — client's own active reservations
   - `cancelClientReservation(initData, id)` — client cancel
+  - `getAdminServiceTypes(initData, page?, size?)` — admin service type list
+  - `createServiceType(initData, dto)` / `updateServiceType(initData, id, dto)` / `deleteServiceType(initData, id)` — service type CRUD
+  - `hideServiceType(initData, id)` / `showServiceType(initData, id)` — toggle active/inactive
 - `lib/utils/reservationStatus.ts` — `translateStatus(status)` maps enums to Russian; returns `'Неизвестный статус'` for unknown values
-- `types/api.d.ts` — all API types (`ServiceType`, `ServiceTypesResponse`, `Schedule`, `SchedulesResponse`, `CreateScheduleDto`, `ApiError`, `CreateReservationDto`, `PaginationInfo`, `UserInfoDto`, `AdminReservation`, `AdminReservationsResponse`, `ClientReservation`)
+- `types/api.d.ts` — all API types (`ServiceType`, `ServiceTypesResponse`, `Schedule`, `SchedulesResponse`, `CreateScheduleDto`, `ApiError`, `CreateReservationDto`, `PaginationInfo`, `UserInfoDto`, `AdminReservation`, `AdminReservationsResponse`, `ClientReservation`, `TypeOfServiceDto`)
 - Base URL: `NEXT_PUBLIC_API_URL` env var
 
 **Image optimization:** `next.config.ts` whitelists the `NEXT_PUBLIC_API_URL` hostname for `<Image>`. Add new image domains there.
@@ -80,13 +83,15 @@ All client components follow this pattern:
 
 - All interactive or data-fetching components require `'use client'` directive
 - Reusable UI primitives: `components/ui/` (`LoadingSpinner`, `ErrorMessage`, `ConfirmDialog`)
-- Layout chrome: `components/layout/` (`Header`, `BottomNavBar`)
+- Layout chrome: `components/layout/` (`Header`, `BottomNavBar`). Note: `BottomNavBar` is a placeholder stub — not currently mounted in the app.
 
 ### In-App Navigation Pattern
 
 `HomeView.tsx` is the view controller. It holds `selected: ServiceType | null` state — when set, renders `ServiceDetail`; otherwise renders `HeroBanner` + `MyReservations` + `ServiceList`. **No Next.js router** — navigation is pure React state within one route.
 
 **`goHome` event:** `Header.tsx` logo dispatches `new Event('goHome')`. `HomeView` listens for it to reset `selected` to `null` **and** close the admin panel (`setAdminOpen(false)`). This is the only cross-component communication bypassing React props.
+
+**Header phone copy:** `Header.tsx` renders a hardcoded phone number button that copies to clipboard with "Скопировано" feedback (same `useRef` timer pattern as AdminPanel). Only works inside Telegram WebApp (`window.Telegram?.WebApp`).
 
 ### ServiceCard Clip-Path
 
@@ -100,26 +105,25 @@ All client components follow this pattern:
 
 HomeView → ServiceDetail (`showBooking` state) → BookingSlots (date/slot picker) → BookingForm → success screen.
 
-### BookingForm and Yandex Maps
+### BookingForm
 
-`components/home/BookingForm.tsx` — inner `MapSection` component is defined in the same file and rendered inside `<YMaps>` so it can call `useYMaps(['geocode'])`. **Never move map logic outside this `<YMaps>` boundary.**
-
-**Address search:**
-1. Debounced (300 ms) `ymaps.geocode(text)`, guarded by a **request counter** (`requestCounterRef`) to discard stale responses from overlapping async calls
-2. Coordinates extracted via `obj.geometry?.getCoordinates?.()` — objects without coords are skipped
-3. On select, `item.coords` is used directly
-
-**Touch support:** Dropdown result items have both `onMouseDown` and `onTouchStart` handlers — `onTouchStart` calls `e.preventDefault()` to prevent the input blur from firing before selection.
-
-**Zone validation:** `pointInPolygon()` (pure JS ray-casting, module-level) validates that a point is within `ZONE_COORDS`. Do NOT replace with `ymaps.geometry.Polygon.contains()` — that API uses pixel coordinates and is unreliable for geographic data. Error message: `'Адрес вне зоны доставки'` — use this exact text in both map-click and search-select paths.
+`components/home/BookingForm.tsx` — collects client name, phone, and address as plain text inputs. No map integration (Yandex Maps was removed for Telegram WebView compatibility).
 
 **Phone validation:** `validate()` checks the phone field with `/^\+?[78]\d{10}$/` after stripping spaces, dashes, and parentheses.
 
-**`<YMaps>` config:** `query={{ apikey: NEXT_PUBLIC_YANDEX_MAPS_API_KEY, load: 'package.full' }}` — `load: 'package.full'` is required for geocoding.
+**Address assembly:** Final `clientAddress` string: `город, улица, д.{building}, подъезд {entrance}, домофон {intercom}, кв.{apt}, этаж {floor}` — empty optional fields are omitted.
+
+### MyReservations
+
+`components/home/MyReservations.tsx` — shows the client's own active reservations. Collapsed to 2 items by default with a "Показать все" toggle. Inner `ReservationCard` handles cancellation via `ConfirmDialog`.
+
+### BookingSlots
+
+`components/home/BookingSlots.tsx` — date picker fetches available dates from `getSchedules`; selecting a date fetches slots from `getAvailableSlots`. Time strings have seconds stripped before display. Slot grid uses 3 columns; Back/Continue buttons are fixed to the bottom.
 
 ### Admin Panel
 
-`AdminPanel.tsx` — full-screen modal, five tabs: "Активные", "Созданные", "Отменённые", "Выполненные", "Расписание".
+`AdminPanel.tsx` — full-screen modal, six tabs: "Активные", "Созданные", "Отменённые", "Выполненные", "Расписание", "Типы услуг".
 
 - On tab change, **`setReservations([])` is called immediately** before the fetch to avoid old data flickering
 - `ReservationCard` — setTimeout for clipboard feedback stored in `useRef` and cleared before each new copy to avoid multiple concurrent timers
@@ -131,11 +135,14 @@ HomeView → ServiceDetail (`showBooking` state) → BookingSlots (date/slot pic
 - Created: "Подтвердить", "Отменить"
 - Active: "Выполнить", "Отменить" (+ "Подтвердить" if status is still CREATED)
 - Cancelled/Completed: display-only
+- Типы услуг: service type cards with edit, delete, and hide/show toggle buttons
 
 ### Styling Patterns
 
-- **Glassmorphism:** use both `backdropFilter: 'blur()'` and `WebkitBackdropFilter: 'blur()'` with `rgba()` backgrounds
+- **Glassmorphism:** use both `backdropFilter: 'blur()'` and `WebkitBackdropFilter: 'blur()'` with `rgba()` backgrounds — typical values: `rgba(15,25,65,0.85)` for cards, `rgba(5,15,50,0.55)` for overlays
 - **CTA color:** `#f5c518` (yellow)
+- **Error color:** `#ff5f5f` (inline validation errors)
+- **Secondary text:** white at `opacity: 0.7`
 - **Safe area insets:** fixed header/nav use `env(safe-area-inset-top/bottom)`; `app/page.tsx` adds matching padding to the scroll container
 - **Locale:** Russian UI text, `toLocaleString('ru-RU')`, ruble sign ₽
 - **Image URLs:** `ServiceCard` handles both relative and absolute URLs — relative ones are prefixed with `NEXT_PUBLIC_API_URL`
@@ -143,4 +150,3 @@ HomeView → ServiceDetail (`showBooking` state) → BookingSlots (date/slot pic
 ## Environment Variables
 
 - `NEXT_PUBLIC_API_URL` — backend API base URL (required)
-- `NEXT_PUBLIC_YANDEX_MAPS_API_KEY` — Yandex Maps API key

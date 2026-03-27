@@ -6,6 +6,8 @@ export interface ServiceType {
 	durationOfWork: number
 	imageUrl: string
 	active: boolean
+	priceFixed: boolean
+	unitName?: string
 }
 
 export interface PaginationInfo {
@@ -47,8 +49,10 @@ export interface CreateScheduleDto {
 export interface TypeOfServiceDto {
 	serviceName: string
 	cost: number
+	priceFixed: boolean
 	durationOfWork: number
 	serviceDescription?: string
+	unitName?: string
 }
 
 export interface ClientReservation {
@@ -65,6 +69,8 @@ export interface ClientReservation {
 		serviceDescription: string
 		imageUrl: string
 		active: boolean
+		priceFixed: boolean
+		unitName?: string
 	}
 	client: {
 		id: number
@@ -103,6 +109,8 @@ export interface AdminReservation {
 		serviceDescription: string
 		imageUrl: string
 		active: boolean
+		priceFixed: boolean
+		unitName?: string
 	}
 	client: {
 		id: number
