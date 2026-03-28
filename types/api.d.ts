@@ -152,3 +152,18 @@ export interface AdminReservationsResponse {
 	content: AdminReservation[]
 	page: PaginationInfo
 }
+
+export interface Admin {
+	id: number
+	name: string
+}
+
+export interface AdminDto {
+	id: number
+	name: string
+}
+
+export interface AdminsResponse {
+	content: Admin[]
+	page: PaginationInfo
+}

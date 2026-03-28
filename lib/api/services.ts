@@ -1,4 +1,4 @@
-import type { ServiceType, ServiceTypesResponse, SchedulesResponse, Schedule, CreateReservationDto, CreateScheduleDto, TypeOfServiceDto, UserInfoDto, AdminReservation, AdminReservationsResponse, ClientReservation, AdditionalService, AdditionalServiceDto, AdditionalServicesResponse } from '@/types/api';
+import type { ServiceType, ServiceTypesResponse, SchedulesResponse, Schedule, CreateReservationDto, CreateScheduleDto, TypeOfServiceDto, UserInfoDto, AdminReservation, AdminReservationsResponse, ClientReservation, AdditionalService, AdditionalServiceDto, AdditionalServicesResponse, Admin, AdminDto, AdminsResponse } from '@/types/api';
 import { ApiClient } from './client';
 
 /**
@@ -183,4 +183,26 @@ export async function hideAdditionalService(initData: string, id: number): Promi
 
 export async function showAdditionalService(initData: string, id: number): Promise<AdditionalService> {
   return new ApiClient(initData).patch<AdditionalService>(`/rest/admin-ui/additionalServices/${id}/active`);
+}
+
+export async function getAdmins(
+  initData: string,
+  page: number = 0,
+  size: number = 20
+): Promise<AdminsResponse> {
+  const client = new ApiClient(initData);
+  const params = new URLSearchParams({ page: page.toString(), size: size.toString() });
+  return client.get<AdminsResponse>(`/rest/admin-ui/admins?${params}`);
+}
+
+export async function createAdmin(initData: string, dto: AdminDto): Promise<Admin> {
+  return new ApiClient(initData).post<Admin>('/rest/admin-ui/admins', dto);
+}
+
+export async function updateAdmin(initData: string, id: number, dto: AdminDto): Promise<Admin> {
+  return new ApiClient(initData).patch<Admin>(`/rest/admin-ui/admins/${id}`, dto);
+}
+
+export async function deleteAdmin(initData: string, id: number): Promise<void> {
+  return new ApiClient(initData).delete<void>(`/rest/admin-ui/admins/${id}`);
 }

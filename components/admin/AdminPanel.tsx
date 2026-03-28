@@ -2,6 +2,7 @@
 
 import { useTelegram } from '@/components/providers/TelegramProvider'
 import { AdditionalServicesTab } from '@/components/admin/tabs/AdditionalServicesTab'
+import { AdminsTab } from '@/components/admin/tabs/AdminsTab'
 import { ReservationsTab } from '@/components/admin/tabs/ReservationsTab'
 import { ScheduleTab } from '@/components/admin/tabs/ScheduleTab'
 import { ServiceTypesTab } from '@/components/admin/tabs/ServiceTypesTab'
@@ -9,12 +10,14 @@ import {
 	getActiveReservations,
 	getAdminAdditionalServices,
 	getAdminServiceTypes,
+	getAdmins,
 	getCancelledReservations,
 	getCompletedReservations,
 	getCreatedReservations,
 	getSchedules,
 } from '@/lib/api/services'
 import type {
+	Admin,
 	AdditionalService,
 	AdminReservation,
 	AdminReservationsResponse,
@@ -31,6 +34,7 @@ type Tab =
 	| 'schedules'
 	| 'services'
 	| 'additionalServices'
+	| 'admins'
 
 const TABS: { id: Tab; label: string }[] = [
 	{ id: 'active', label: 'Активные' },
@@ -40,6 +44,7 @@ const TABS: { id: Tab; label: string }[] = [
 	{ id: 'schedules', label: 'Расписание' },
 	{ id: 'services', label: 'Типы услуг' },
 	{ id: 'additionalServices', label: 'Доп. услуги' },
+	{ id: 'admins', label: 'Администраторы' },
 ]
 
 interface AdminPanelProps {
@@ -68,8 +73,13 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 	const [additionalServicesError, setAdditionalServicesError] = useState<string | null>(null)
 	const [showAddAdditionalServiceForm, setShowAddAdditionalServiceForm] = useState(false)
 
+	const [admins, setAdmins] = useState<Admin[]>([])
+	const [adminsLoading, setAdminsLoading] = useState(false)
+	const [adminsError, setAdminsError] = useState<string | null>(null)
+	const [showAddAdminForm, setShowAddAdminForm] = useState(false)
+
 	const fetchReservations = useCallback(async () => {
-		if (!isReady || activeTab === 'schedules' || activeTab === 'services' || activeTab === 'additionalServices')
+		if (!isReady || activeTab === 'schedules' || activeTab === 'services' || activeTab === 'additionalServices' || activeTab === 'admins')
 			return
 		setLoading(true)
 		setError(null)
@@ -143,6 +153,25 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 		}
 	}, [activeTab, initData, isReady])
 
+	const fetchAdmins = useCallback(async () => {
+		if (!isReady || activeTab !== 'admins') return
+		setAdminsLoading(true)
+		setAdminsError(null)
+		try {
+			const first = await getAdmins(initData, 0)
+			const all = [...first.content]
+			for (let p = 1; p < first.page.totalPages; p++) {
+				const page = await getAdmins(initData, p)
+				all.push(...page.content)
+			}
+			setAdmins(all)
+		} catch {
+			setAdminsError('Не удалось загрузить администраторов')
+		} finally {
+			setAdminsLoading(false)
+		}
+	}, [activeTab, initData, isReady])
+
 	useEffect(() => {
 		fetchReservations()
 	}, [fetchReservations])
@@ -158,6 +187,10 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 	useEffect(() => {
 		fetchAdditionalServices()
 	}, [fetchAdditionalServices])
+
+	useEffect(() => {
+		fetchAdmins()
+	}, [fetchAdmins])
 
 	function handleUpdate(updated: AdminReservation) {
 		setReservations(prev => prev.map(r => (r.id === updated.id ? updated : r)))
@@ -196,6 +229,19 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 
 	function handleAdditionalServiceUpdate(updated: AdditionalService) {
 		setAdditionalServices(prev => prev.map(s => (s.id === updated.id ? updated : s)))
+	}
+
+	function handleAdminAdd(admin: Admin) {
+		setAdmins(prev => [...prev, admin])
+		setShowAddAdminForm(false)
+	}
+
+	function handleAdminUpdate(updated: Admin) {
+		setAdmins(prev => prev.map(a => (a.id === updated.id ? updated : a)))
+	}
+
+	function handleAdminRemove(id: number) {
+		setAdmins(prev => prev.filter(a => a.id !== id))
 	}
 
 	return (
@@ -248,7 +294,20 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 
 			{/* Content */}
 			<div className='flex-1 overflow-y-auto px-4 py-3'>
-				{activeTab === 'additionalServices' ? (
+				{activeTab === 'admins' ? (
+					<AdminsTab
+						admins={admins}
+						loading={adminsLoading}
+						error={adminsError}
+						showAddForm={showAddAdminForm}
+						onToggleAddForm={() => setShowAddAdminForm(v => !v)}
+						initData={initData}
+						onAdd={handleAdminAdd}
+						onCancel={() => setShowAddAdminForm(false)}
+						onUpdate={handleAdminUpdate}
+						onRemove={handleAdminRemove}
+					/>
+				) : activeTab === 'additionalServices' ? (
 					<AdditionalServicesTab
 						additionalServices={additionalServices}
 						loading={additionalServicesLoading}
