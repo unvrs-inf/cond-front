@@ -53,7 +53,7 @@ Next.js App Router (not Pages Router). All routes are in `app/`:
   - `getServiceTypes(initData, page?, size?)` — paginated, defaults page=0, size=20
   - `getSchedules(initData)` — available schedules
   - `getAvailableSlots(initData, serviceId, date)` — time slots for a date
-  - `createReservation(initData, dto)` — `CreateReservationDto`: `start`, `serviceId`, `clientName`, `clientPhoneNumber`, `clientAddress`
+  - `createReservation(initData, dto)` — `CreateReservationDto`: `start`, `serviceId`, `clientName`, `clientPhoneNumber`, `clientAddress`, `additionalServicesIds?`
   - `getUserInfo(initData)` — GET `/rest/admin-ui/clients/me`; returns `UserInfoDto` (`id`, `name`, `isAdmin`)
   - `getActiveReservations` / `getCreatedReservations` / `getCancelledReservations` / `getCompletedReservations` — admin reservation lists
   - `completeReservation` / `cancelReservation` / `confirmReservation` — PATCH actions
@@ -63,8 +63,12 @@ Next.js App Router (not Pages Router). All routes are in `app/`:
   - `getAdminServiceTypes(initData, page?, size?)` — admin service type list
   - `createServiceType(initData, dto)` / `updateServiceType(initData, id, dto)` / `deleteServiceType(initData, id)` — service type CRUD
   - `hideServiceType(initData, id)` / `showServiceType(initData, id)` — toggle active/inactive
+  - `getAdditionalServices(initData, page?, size?)` — paginated `/additionalServices`; normalises both `content[]` and Spring HATEOAS `_embedded.additionalServiceList[]` response formats
+  - `getAdminAdditionalServices(initData, page?, size?)` — `/rest/admin-ui/additionalServices`
+  - `createAdditionalService(initData, dto)` / `updateAdditionalService(initData, id, dto)` — admin CRUD
+  - `hideAdditionalService(initData, id)` / `showAdditionalService(initData, id)` — toggle via `/nonActive` and `/active` PATCH endpoints
 - `lib/utils/reservationStatus.ts` — `translateStatus(status)` maps enums to Russian; returns `'Неизвестный статус'` for unknown values
-- `types/api.d.ts` — all API types (`ServiceType`, `ServiceTypesResponse`, `Schedule`, `SchedulesResponse`, `CreateScheduleDto`, `ApiError`, `CreateReservationDto`, `PaginationInfo`, `UserInfoDto`, `AdminReservation`, `AdminReservationsResponse`, `ClientReservation`, `TypeOfServiceDto`)
+- `types/api.d.ts` — all API types (`ServiceType`, `ServiceTypesResponse`, `Schedule`, `SchedulesResponse`, `CreateScheduleDto`, `ApiError`, `CreateReservationDto`, `PaginationInfo`, `UserInfoDto`, `AdminReservation`, `AdminReservationsResponse`, `ClientReservation`, `TypeOfServiceDto`, `AdditionalService`, `AdditionalServiceDto`, `AdditionalServicesResponse`). Note: `ServiceType` uses `priceFixed: boolean`, but `AdditionalService` uses `pricingFixed: boolean` (with "ing") — this matches the backend API intentionally. `ClientReservation` and `AdminReservation` include `additionalServices?: AdditionalService[]`.
 - Base URL: `NEXT_PUBLIC_API_URL` env var
 
 **Image optimization:** `next.config.ts` whitelists the `NEXT_PUBLIC_API_URL` hostname for `<Image>`. Add new image domains there.
@@ -91,11 +95,13 @@ All client components follow this pattern:
 
 **`goHome` event:** `Header.tsx` logo dispatches `new Event('goHome')`. `HomeView` listens for it to reset `selected` to `null` **and** close the admin panel (`setAdminOpen(false)`). This is the only cross-component communication bypassing React props.
 
-**Header phone copy:** `Header.tsx` renders a hardcoded phone number button that copies to clipboard with "Скопировано" feedback (same `useRef` timer pattern as AdminPanel). Only works inside Telegram WebApp (`window.Telegram?.WebApp`).
+**Header phone copy:** `Header.tsx` renders a hardcoded phone number button that copies to clipboard with "Скопировано" feedback. Only works inside Telegram WebApp (`window.Telegram?.WebApp`).
 
-### ServiceCard Clip-Path
+**Copy-to-clipboard timer pattern:** Both `Header.tsx` and `AdminPanel` `ReservationCard` store the feedback `setTimeout` ID in a `useRef`. Always `clearTimeout(ref.current)` before setting a new timer to prevent multiple concurrent feedback timers running at once.
 
-`ServiceCard.tsx` uses a `ResizeObserver` to compute a CSS `clip-path` polygon for a notch in the bottom-right corner where the icon button sits. The polygon is recalculated on every resize. Don't modify card dimensions without accounting for this.
+### ServiceCard
+
+`ServiceCard.tsx` layout uses `rounded-3xl overflow-hidden` on the card body with an absolutely positioned image in the top-right corner. Accepts a `fullWidth` boolean prop (default `false`) — `ServiceList` passes `fullWidth={true}` when only one service exists, which increases card height (260 → 320px) and image dimensions accordingly.
 
 ### ConfirmDialog
 
@@ -103,7 +109,19 @@ All client components follow this pattern:
 
 ### Booking Flow
 
-HomeView → ServiceDetail (`showBooking` state) → BookingSlots (date/slot picker) → BookingForm → success screen.
+HomeView → ServiceDetail (`showBooking` state) → BookingSlots (date/slot picker) → **AdditionalServicesSelector** → BookingForm → success screen.
+
+The AdditionalServicesSelector step is skippable ("Пропустить" button when nothing selected). Selected additional service IDs are threaded through `BookingSlots` → `BookingForm` → `CreateReservationDto.additionalServicesIds`.
+
+### AdditionalServicesSelector
+
+`components/home/AdditionalServicesSelector.tsx` — multi-select step between slot picking and form submission.
+
+- Props: `onBack`, `onContinue(selectedIds: number[])`
+- Loads all pages via the same `totalPages` loop as `ServiceList`
+- Selected card style: yellow border (`1.5px solid #f5c518`) + `rgba(245,197,24,0.15)` background; unselected: transparent border + `rgba(15,25,65,0.85)`
+- Price display: `cost ₽` when `pricingFixed === false`, `cost ₽ за unitName` when `pricingFixed === true && unitName`
+- Continue button: `Продолжить (N)` when N > 0, else `Пропустить`
 
 ### BookingForm
 
@@ -115,7 +133,7 @@ HomeView → ServiceDetail (`showBooking` state) → BookingSlots (date/slot pic
 
 ### MyReservations
 
-`components/home/MyReservations.tsx` — shows the client's own active reservations. Collapsed to 2 items by default with a "Показать все" toggle. Inner `ReservationCard` handles cancellation via `ConfirmDialog`.
+`components/home/MyReservations.tsx` — shows the client's own active reservations. Collapsed to 2 items by default with a "Показать все" toggle. Inner `ReservationCard` handles cancellation via `ConfirmDialog`. When `reservation.additionalServices` is non-empty, renders a comma-separated list of service names with prices below the main service info.
 
 ### BookingSlots
 
@@ -123,11 +141,16 @@ HomeView → ServiceDetail (`showBooking` state) → BookingSlots (date/slot pic
 
 ### Admin Panel
 
-`AdminPanel.tsx` — full-screen modal, six tabs: "Активные", "Созданные", "Отменённые", "Выполненные", "Расписание", "Типы услуг".
+`AdminPanel.tsx` — full-screen modal, seven tabs: "Активные", "Созданные", "Отменённые", "Выполненные", "Расписание", "Типы услуг", "Доп. услуги".
 
 - On tab change, **`setReservations([])` is called immediately** before the fetch to avoid old data flickering
 - `ReservationCard` — setTimeout for clipboard feedback stored in `useRef` and cleared before each new copy to avoid multiple concurrent timers
-- `formatScheduleDate` — parses with `new Date(year, month-1, day)` (not `dateStr + 'T00:00:00'`) to avoid UTC timezone offset shifting dates
+
+**`components/admin/formatters.ts`:** shared date helpers used across admin cards:
+- `formatDateTime(dt)` — formats ISO datetime string to Russian locale (full date + time)
+- `formatScheduleDate(dateStr)` — formats `YYYY-MM-DD` to Russian locale; parses with `new Date(year, month-1, day)` (not `dateStr + 'T00:00:00'`) to avoid UTC offset shifting dates
+
+**`components/admin/tabs/`:** thin presentational wrappers (ReservationsTab, ScheduleTab, ServiceTypesTab, AdditionalServicesTab). Each receives pre-fetched data and callbacks from `AdminPanel` and delegates rendering to the corresponding Card and Form components.
 
 **Access control:** `HomeView` calls `getUserInfo()` on mount; if `user.isAdmin === true`, renders `AdminButton` + `AdminPanel`. Errors silently ignored (non-admins see nothing).
 
@@ -135,7 +158,12 @@ HomeView → ServiceDetail (`showBooking` state) → BookingSlots (date/slot pic
 - Created: "Подтвердить", "Отменить"
 - Active: "Выполнить", "Отменить" (+ "Подтвердить" if status is still CREATED)
 - Cancelled/Completed: display-only
-- Типы услуг: service type cards with edit, delete, and hide/show toggle buttons
+
+**Расписание tab:** `ScheduleCard` + `AddScheduleForm` provide full CRUD for work schedules (fields: `date`, `workBeginning`, `workEnding`). Deletes go through `ConfirmDialog`.
+
+**Типы услуг tab:** `ServiceTypeCard` + `AddServiceTypeForm` provide full CRUD for service types (fields: `serviceName`, `cost`, `priceFixed`, `durationOfWork`, `serviceDescription`, `unitName`). Toggle visibility with `hideServiceType` / `showServiceType`. Loads all pages using the same `totalPages` loop as `ServiceList`.
+
+**Доп. услуги tab:** mirrors the "Типы услуг" tab pattern for additional services (fields: `serviceName`, `cost`, `pricingFixed`, `unitName`, `serviceDescription`). Uses `getAdminAdditionalServices`, `createAdditionalService`, `updateAdditionalService`, `hideAdditionalService`, `showAdditionalService`.
 
 ### Styling Patterns
 
@@ -143,7 +171,7 @@ HomeView → ServiceDetail (`showBooking` state) → BookingSlots (date/slot pic
 - **CTA color:** `#f5c518` (yellow)
 - **Error color:** `#ff5f5f` (inline validation errors)
 - **Secondary text:** white at `opacity: 0.7`
-- **Safe area insets:** fixed header/nav use `env(safe-area-inset-top/bottom)`; `app/page.tsx` adds matching padding to the scroll container
+- **Safe area insets:** fixed header/nav use `env(safe-area-inset-top/bottom)`; `app/page.tsx` adds matching padding to the scroll container. For floating/fixed elements anchored above the nav, use `calc(5rem + env(safe-area-inset-bottom, 0px))` for both `bottom` and `padding-bottom` (e.g. `AdminButton`, scrollable content containers)
 - **Locale:** Russian UI text, `toLocaleString('ru-RU')`, ruble sign ₽
 - **Image URLs:** `ServiceCard` handles both relative and absolute URLs — relative ones are prefixed with `NEXT_PUBLIC_API_URL`
 
