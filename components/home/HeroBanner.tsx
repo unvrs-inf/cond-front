@@ -1,8 +1,14 @@
 'use client'
 
 import Image from 'next/image'
+import type { InstallationDto } from '@/types/api'
 
-export function HeroBanner() {
+interface HeroBannerProps {
+	installation?: InstallationDto | null
+	onInstallationClick?: () => void
+}
+
+export function HeroBanner({ installation, onInstallationClick }: HeroBannerProps = {}) {
 	return (
 		<div className='w-full py-6 mt-60 px-6 flex flex-col items-center'>
 			{/* Кружок вне карточки — наполовину вылезает за нижний край */}
@@ -31,6 +37,15 @@ export function HeroBanner() {
 					WebkitBackdropFilter: 'blur(12px)',
 				}}
 			>
+				{installation && onInstallationClick && (
+					<button
+						onClick={onInstallationClick}
+						className='mb-4 w-full max-w-xs py-3 rounded-2xl text-base font-medium'
+						style={{ background: '#f5c518', color: '#1a1a1a' }}
+					>
+						{installation.name}
+					</button>
+				)}
 				<h2 className='text-white font-medium text-xl text-center mb-2'>
 					Обслуживание кондиционеров
 				</h2>

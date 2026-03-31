@@ -67,8 +67,14 @@ Next.js App Router (not Pages Router). All routes are in `app/`:
   - `getAdminAdditionalServices(initData, page?, size?)` — `/rest/admin-ui/additionalServices`
   - `createAdditionalService(initData, dto)` / `updateAdditionalService(initData, id, dto)` — admin CRUD
   - `hideAdditionalService(initData, id)` / `showAdditionalService(initData, id)` — toggle via `/nonActive` and `/active` PATCH endpoints
+  - `getAdmins(initData, page?, size?)` — paginated `/rest/admin-ui/admins`
+  - `createAdmin(initData, dto)` / `updateAdmin(initData, id, dto)` / `deleteAdmin(initData, id)` — admin user CRUD
+  - `getInstallation(initData)` — GET `/installations`; returns `InstallationDto | null` (silently returns `null` on error)
+  - `createInstallationRequest(initData, dto)` — POST `/installations/request`; dto is `InstallationRequestDto`
+  - `getInstallationRequests(initData, page?, size?)` — admin GET `/rest/admin-ui/installationRequests`; normalises `content[]` and Spring HATEOAS `_embedded.installationRequestList[]`
+  - `deleteInstallationRequest(initData, id)` — admin DELETE `/rest/admin-ui/installationRequests/{id}`
 - `lib/utils/reservationStatus.ts` — `translateStatus(status)` maps enums to Russian; returns `'Неизвестный статус'` for unknown values
-- `types/api.d.ts` — all API types (`ServiceType`, `ServiceTypesResponse`, `Schedule`, `SchedulesResponse`, `CreateScheduleDto`, `ApiError`, `CreateReservationDto`, `PaginationInfo`, `UserInfoDto`, `AdminReservation`, `AdminReservationsResponse`, `ClientReservation`, `TypeOfServiceDto`, `AdditionalService`, `AdditionalServiceDto`, `AdditionalServicesResponse`). Note: `ServiceType` uses `priceFixed: boolean`, but `AdditionalService` uses `pricingFixed: boolean` (with "ing") — this matches the backend API intentionally. `ClientReservation` and `AdminReservation` include `additionalServices?: AdditionalService[]`.
+- `types/api.d.ts` — all API types (`ServiceType`, `ServiceTypesResponse`, `Schedule`, `SchedulesResponse`, `CreateScheduleDto`, `ApiError`, `CreateReservationDto`, `PaginationInfo`, `UserInfoDto`, `AdminReservation`, `AdminReservationsResponse`, `ClientReservation`, `TypeOfServiceDto`, `AdditionalService`, `AdditionalServiceDto`, `AdditionalServicesResponse`, `Admin`, `AdminDto`, `AdminsResponse`, `InstallationDto`, `InstallationRequestDto`, `InstallationRequest`, `InstallationRequestsResponse`). Note: `ServiceType` uses `priceFixed: boolean`, but `AdditionalService` uses `pricingFixed: boolean` (with "ing") — this matches the backend API intentionally. `ClientReservation` and `AdminReservation` include `additionalServices?: AdditionalService[]`. `InstallationDto`: `{ name: string, description: string }`; `InstallationRequestDto`: `{ name: string, clientPhoneNumber: string }`. `InstallationRequest`: `{ id, clientPhoneNumber, createdAt, client?: { id, username?, tgUsername?, name? } }`; `InstallationRequestsResponse`: `{ content, page }` pagination shape.
 - Base URL: `NEXT_PUBLIC_API_URL` env var
 
 **Image optimization:** `next.config.ts` whitelists the `NEXT_PUBLIC_API_URL` hostname for `<Image>`. Add new image domains there.
@@ -91,9 +97,17 @@ All client components follow this pattern:
 
 ### In-App Navigation Pattern
 
-`HomeView.tsx` is the view controller. It holds `selected: ServiceType | null` state — when set, renders `ServiceDetail`; otherwise renders `HeroBanner` + `MyReservations` + `ServiceList`. **No Next.js router** — navigation is pure React state within one route.
+`HomeView.tsx` is the view controller. **No Next.js router** — navigation is pure React state within one route. View priority:
 
-**`goHome` event:** `Header.tsx` logo dispatches `new Event('goHome')`. `HomeView` listens for it to reset `selected` to `null` **and** close the admin panel (`setAdminOpen(false)`). This is the only cross-component communication bypassing React props.
+```
+installationOpen && installation → InstallationView
+selected → ServiceDetail
+else → HeroBanner + MyReservations + ServiceList
+```
+
+`HomeView` fetches `getInstallation(initData)` on mount (gated by `isReady`). If an installation exists, `HeroBanner` receives `installation` and `onInstallationClick` props and renders a yellow CTA button with `installation.name`.
+
+**`goHome` event:** `Header.tsx` logo dispatches `new Event('goHome')`. `HomeView` listens for it to reset `selected` to `null` **and** close both the admin panel (`setAdminOpen(false)`) and installation view (`setInstallationOpen(false)`). This is the only cross-component communication bypassing React props.
 
 **Header phone copy:** `Header.tsx` renders a hardcoded phone number button that copies to clipboard with "Скопировано" feedback. Only works inside Telegram WebApp (`window.Telegram?.WebApp`).
 
@@ -123,6 +137,15 @@ The AdditionalServicesSelector step is skippable ("Пропустить" button 
 - Price display: `cost ₽` when `pricingFixed === false`, `cost ₽ за unitName` when `pricingFixed === true && unitName`
 - Continue button: `Продолжить (N)` when N > 0, else `Пропустить`
 
+### InstallationView
+
+`components/home/InstallationView.tsx` — displays a service installation/franchise location and allows users to submit a contact request. Three states:
+1. **Info**: shows `installation.name` + `installation.description` with "Оставить заявку" button
+2. **Form**: collects `name` and `clientPhoneNumber`; phone validation uses same regex as BookingForm (`/^\+?[78]\d{10}$/` after sanitization)
+3. **Success**: "Заявка отправлена" confirmation screen
+
+Props: `installation: InstallationDto`, `initData: string`, `onBack: () => void`. Submits via `createInstallationRequest`.
+
 ### BookingForm
 
 `components/home/BookingForm.tsx` — collects client name, phone, and address as plain text inputs. No map integration (Yandex Maps was removed for Telegram WebView compatibility).
@@ -141,7 +164,7 @@ The AdditionalServicesSelector step is skippable ("Пропустить" button 
 
 ### Admin Panel
 
-`AdminPanel.tsx` — full-screen modal, seven tabs: "Активные", "Созданные", "Отменённые", "Выполненные", "Расписание", "Типы услуг", "Доп. услуги".
+`AdminPanel.tsx` — full-screen modal, nine tabs: "Активные", "Созданные", "Монтаж", "Отменённые", "Выполненные", "Расписание", "Типы услуг", "Доп. услуги", "Администраторы".
 
 - On tab change, **`setReservations([])` is called immediately** before the fetch to avoid old data flickering
 - `ReservationCard` — setTimeout for clipboard feedback stored in `useRef` and cleared before each new copy to avoid multiple concurrent timers
@@ -150,7 +173,7 @@ The AdditionalServicesSelector step is skippable ("Пропустить" button 
 - `formatDateTime(dt)` — formats ISO datetime string to Russian locale (full date + time)
 - `formatScheduleDate(dateStr)` — formats `YYYY-MM-DD` to Russian locale; parses with `new Date(year, month-1, day)` (not `dateStr + 'T00:00:00'`) to avoid UTC offset shifting dates
 
-**`components/admin/tabs/`:** thin presentational wrappers (ReservationsTab, ScheduleTab, ServiceTypesTab, AdditionalServicesTab). Each receives pre-fetched data and callbacks from `AdminPanel` and delegates rendering to the corresponding Card and Form components.
+**`components/admin/tabs/`:** thin presentational wrappers (ReservationsTab, ScheduleTab, ServiceTypesTab, AdditionalServicesTab, InstallationRequestsTab). Each receives pre-fetched data and callbacks from `AdminPanel` and delegates rendering to the corresponding Card and Form components.
 
 **Access control:** `HomeView` calls `getUserInfo()` on mount; if `user.isAdmin === true`, renders `AdminButton` + `AdminPanel`. Errors silently ignored (non-admins see nothing).
 
@@ -164,6 +187,10 @@ The AdditionalServicesSelector step is skippable ("Пропустить" button 
 **Типы услуг tab:** `ServiceTypeCard` + `AddServiceTypeForm` provide full CRUD for service types (fields: `serviceName`, `cost`, `priceFixed`, `durationOfWork`, `serviceDescription`, `unitName`). Toggle visibility with `hideServiceType` / `showServiceType`. Loads all pages using the same `totalPages` loop as `ServiceList`.
 
 **Доп. услуги tab:** mirrors the "Типы услуг" tab pattern for additional services (fields: `serviceName`, `cost`, `pricingFixed`, `unitName`, `serviceDescription`). Uses `getAdminAdditionalServices`, `createAdditionalService`, `updateAdditionalService`, `hideAdditionalService`, `showAdditionalService`.
+
+**Монтаж tab:** `InstallationRequestCard` + `InstallationRequestsTab` — read + delete only (requests are user-submitted, no add form). Card shows client name, Telegram username as a clickable `https://t.me/{tgUsername}` link (yellow), and phone. Phone copy-to-clipboard uses the `useRef` timer pattern. Client display priority: `client.name` → `@tgUsername` → ID fallback. Loads all pages via `totalPages` loop. Deletes go through `ConfirmDialog`.
+
+**Администраторы tab:** `AdminCard` + `AddAdminForm` provide CRUD for admin users. `Admin` type: `{ id: number, name: string }` — `id` is the Telegram ID. `AdminDto` has the same shape. API: `getAdmins(initData, page?, size?)` → `/rest/admin-ui/admins`; `createAdmin` / `updateAdmin(id, dto)` / `deleteAdmin(id)`. Deletes go through `ConfirmDialog`. `AdminsResponse` uses the same `{ content, page }` pagination shape as other list endpoints.
 
 ### Styling Patterns
 

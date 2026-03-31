@@ -1,4 +1,4 @@
-import type { ServiceType, ServiceTypesResponse, SchedulesResponse, Schedule, CreateReservationDto, CreateScheduleDto, TypeOfServiceDto, UserInfoDto, AdminReservation, AdminReservationsResponse, ClientReservation, AdditionalService, AdditionalServiceDto, AdditionalServicesResponse, Admin, AdminDto, AdminsResponse } from '@/types/api';
+import type { ServiceType, ServiceTypesResponse, SchedulesResponse, Schedule, CreateReservationDto, CreateScheduleDto, TypeOfServiceDto, UserInfoDto, AdminReservation, AdminReservationsResponse, ClientReservation, AdditionalService, AdditionalServiceDto, AdditionalServicesResponse, Admin, AdminDto, AdminsResponse, InstallationDto, InstallationRequestDto, InstallationRequest, InstallationRequestsResponse } from '@/types/api';
 import { ApiClient } from './client';
 
 /**
@@ -205,4 +205,42 @@ export async function updateAdmin(initData: string, id: number, dto: AdminDto): 
 
 export async function deleteAdmin(initData: string, id: number): Promise<void> {
   return new ApiClient(initData).delete<void>(`/rest/admin-ui/admins/${id}`);
+}
+
+export async function getInstallation(initData: string): Promise<InstallationDto | null> {
+  try {
+    const data = await new ApiClient(initData).get<InstallationDto | null>('/installations');
+    return data ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function createInstallationRequest(
+  initData: string,
+  dto: InstallationRequestDto
+): Promise<void> {
+  return new ApiClient(initData).post<void>('/installations/request', dto);
+}
+
+interface _InstallationRequestsRaw {
+  content?: InstallationRequest[]
+  _embedded?: { installationRequestList?: InstallationRequest[] }
+  page: InstallationRequestsResponse['page']
+}
+
+export async function getInstallationRequests(
+  initData: string,
+  page: number = 0,
+  size: number = 20
+): Promise<InstallationRequestsResponse> {
+  const client = new ApiClient(initData);
+  const params = new URLSearchParams({ page: page.toString(), size: size.toString() });
+  const raw = await client.get<_InstallationRequestsRaw>(`/rest/admin-ui/installationRequests?${params}`);
+  const content = raw.content ?? raw._embedded?.installationRequestList ?? [];
+  return { content, page: raw.page };
+}
+
+export async function deleteInstallationRequest(initData: string, id: number): Promise<InstallationRequest> {
+  return new ApiClient(initData).delete<InstallationRequest>(`/rest/admin-ui/installationRequests/${id}`);
 }

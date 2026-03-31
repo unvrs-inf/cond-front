@@ -3,6 +3,7 @@
 import { useTelegram } from '@/components/providers/TelegramProvider'
 import { AdditionalServicesTab } from '@/components/admin/tabs/AdditionalServicesTab'
 import { AdminsTab } from '@/components/admin/tabs/AdminsTab'
+import { InstallationRequestsTab } from '@/components/admin/tabs/InstallationRequestsTab'
 import { ReservationsTab } from '@/components/admin/tabs/ReservationsTab'
 import { ScheduleTab } from '@/components/admin/tabs/ScheduleTab'
 import { ServiceTypesTab } from '@/components/admin/tabs/ServiceTypesTab'
@@ -14,6 +15,7 @@ import {
 	getCancelledReservations,
 	getCompletedReservations,
 	getCreatedReservations,
+	getInstallationRequests,
 	getSchedules,
 } from '@/lib/api/services'
 import type {
@@ -21,6 +23,7 @@ import type {
 	AdditionalService,
 	AdminReservation,
 	AdminReservationsResponse,
+	InstallationRequest,
 	Schedule,
 	ServiceType,
 } from '@/types/api'
@@ -35,10 +38,12 @@ type Tab =
 	| 'services'
 	| 'additionalServices'
 	| 'admins'
+	| 'installationRequests'
 
 const TABS: { id: Tab; label: string }[] = [
 	{ id: 'active', label: 'Активные' },
 	{ id: 'created', label: 'Созданные' },
+	{ id: 'installationRequests', label: 'Монтаж' },
 	{ id: 'cancelled', label: 'Отменённые' },
 	{ id: 'completed', label: 'Выполненные' },
 	{ id: 'schedules', label: 'Расписание' },
@@ -78,8 +83,12 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 	const [adminsError, setAdminsError] = useState<string | null>(null)
 	const [showAddAdminForm, setShowAddAdminForm] = useState(false)
 
+	const [installationRequests, setInstallationRequests] = useState<InstallationRequest[]>([])
+	const [installationRequestsLoading, setInstallationRequestsLoading] = useState(false)
+	const [installationRequestsError, setInstallationRequestsError] = useState<string | null>(null)
+
 	const fetchReservations = useCallback(async () => {
-		if (!isReady || activeTab === 'schedules' || activeTab === 'services' || activeTab === 'additionalServices' || activeTab === 'admins')
+		if (!isReady || activeTab === 'schedules' || activeTab === 'services' || activeTab === 'additionalServices' || activeTab === 'admins' || activeTab === 'installationRequests')
 			return
 		setLoading(true)
 		setError(null)
@@ -172,6 +181,25 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 		}
 	}, [activeTab, initData, isReady])
 
+	const fetchInstallationRequests = useCallback(async () => {
+		if (!isReady || activeTab !== 'installationRequests') return
+		setInstallationRequestsLoading(true)
+		setInstallationRequestsError(null)
+		try {
+			const first = await getInstallationRequests(initData, 0)
+			const all = [...first.content]
+			for (let p = 1; p < first.page.totalPages; p++) {
+				const page = await getInstallationRequests(initData, p)
+				all.push(...page.content)
+			}
+			setInstallationRequests(all)
+		} catch {
+			setInstallationRequestsError('Не удалось загрузить заявки на монтаж')
+		} finally {
+			setInstallationRequestsLoading(false)
+		}
+	}, [activeTab, initData, isReady])
+
 	useEffect(() => {
 		fetchReservations()
 	}, [fetchReservations])
@@ -191,6 +219,10 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 	useEffect(() => {
 		fetchAdmins()
 	}, [fetchAdmins])
+
+	useEffect(() => {
+		fetchInstallationRequests()
+	}, [fetchInstallationRequests])
 
 	function handleUpdate(updated: AdminReservation) {
 		setReservations(prev => prev.map(r => (r.id === updated.id ? updated : r)))
@@ -244,6 +276,10 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 		setAdmins(prev => prev.filter(a => a.id !== id))
 	}
 
+	function handleInstallationRequestRemove(id: number) {
+		setInstallationRequests(prev => prev.filter(r => r.id !== id))
+	}
+
 	return (
 		<div
 			className='fixed inset-0 z-50 flex flex-col'
@@ -294,7 +330,15 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 
 			{/* Content */}
 			<div className='flex-1 overflow-y-auto px-4 py-3'>
-				{activeTab === 'admins' ? (
+				{activeTab === 'installationRequests' ? (
+					<InstallationRequestsTab
+						requests={installationRequests}
+						loading={installationRequestsLoading}
+						error={installationRequestsError}
+						initData={initData}
+						onRemove={handleInstallationRequestRemove}
+					/>
+				) : activeTab === 'admins' ? (
 					<AdminsTab
 						admins={admins}
 						loading={adminsLoading}

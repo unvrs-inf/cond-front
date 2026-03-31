@@ -167,3 +167,30 @@ export interface AdminsResponse {
 	content: Admin[]
 	page: PaginationInfo
 }
+
+export interface InstallationDto {
+	name: string
+	description: string
+}
+
+export interface InstallationRequestDto {
+	name: string
+	clientPhoneNumber: string
+}
+
+export interface InstallationRequest {
+	id: number
+	clientPhoneNumber: string
+	createdAt: string
+	client?: {
+		id: number
+		username?: string
+		tgUsername?: string
+		name?: string
+	}
+}
+
+export interface InstallationRequestsResponse {
+	content: InstallationRequest[]
+	page: PaginationInfo
+}
