@@ -194,3 +194,15 @@ export interface InstallationRequestsResponse {
 	content: InstallationRequest[]
 	page: PaginationInfo
 }
+
+export interface InstallationService {
+	id: number
+	name: string
+	description: string
+	active: boolean
+}
+
+export interface InstallationServiceDto {
+	name: string
+	description: string
+}

@@ -16,6 +16,7 @@ import {
 	getCompletedReservations,
 	getCreatedReservations,
 	getInstallationRequests,
+	getInstallationServices,
 	getSchedules,
 } from '@/lib/api/services'
 import type {
@@ -24,6 +25,7 @@ import type {
 	AdminReservation,
 	AdminReservationsResponse,
 	InstallationRequest,
+	InstallationService,
 	Schedule,
 	ServiceType,
 } from '@/types/api'
@@ -86,6 +88,10 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 	const [installationRequests, setInstallationRequests] = useState<InstallationRequest[]>([])
 	const [installationRequestsLoading, setInstallationRequestsLoading] = useState(false)
 	const [installationRequestsError, setInstallationRequestsError] = useState<string | null>(null)
+
+	const [installationServices, setInstallationServices] = useState<InstallationService[]>([])
+	const [installationServicesLoading, setInstallationServicesLoading] = useState(false)
+	const [installationServicesError, setInstallationServicesError] = useState<string | null>(null)
 
 	const fetchReservations = useCallback(async () => {
 		if (!isReady || activeTab === 'schedules' || activeTab === 'services' || activeTab === 'additionalServices' || activeTab === 'admins' || activeTab === 'installationRequests')
@@ -181,6 +187,20 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 		}
 	}, [activeTab, initData, isReady])
 
+	const fetchInstallationServices = useCallback(async () => {
+		if (!isReady || activeTab !== 'services') return
+		setInstallationServicesLoading(true)
+		setInstallationServicesError(null)
+		try {
+			const data = await getInstallationServices(initData)
+			setInstallationServices(data)
+		} catch {
+			setInstallationServicesError('Не удалось загрузить услуги по установке')
+		} finally {
+			setInstallationServicesLoading(false)
+		}
+	}, [activeTab, initData, isReady])
+
 	const fetchInstallationRequests = useCallback(async () => {
 		if (!isReady || activeTab !== 'installationRequests') return
 		setInstallationRequestsLoading(true)
@@ -219,6 +239,10 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 	useEffect(() => {
 		fetchAdmins()
 	}, [fetchAdmins])
+
+	useEffect(() => {
+		fetchInstallationServices()
+	}, [fetchInstallationServices])
 
 	useEffect(() => {
 		fetchInstallationRequests()
@@ -274,6 +298,10 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 
 	function handleAdminRemove(id: number) {
 		setAdmins(prev => prev.filter(a => a.id !== id))
+	}
+
+	function handleInstallationServiceUpdate(updated: InstallationService) {
+		setInstallationServices(prev => prev.map(s => (s.id === updated.id ? updated : s)))
 	}
 
 	function handleInstallationRequestRemove(id: number) {
@@ -374,6 +402,10 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 						onAdd={handleServiceTypeAdd}
 						onCancel={() => setShowAddServiceForm(false)}
 						onUpdate={handleServiceTypeUpdate}
+						installationServices={installationServices}
+						installationServicesLoading={installationServicesLoading}
+						installationServicesError={installationServicesError}
+						onInstallationServiceUpdate={handleInstallationServiceUpdate}
 					/>
 				) : activeTab === 'schedules' ? (
 					<ScheduleTab

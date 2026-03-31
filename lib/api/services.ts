@@ -1,4 +1,4 @@
-import type { ServiceType, ServiceTypesResponse, SchedulesResponse, Schedule, CreateReservationDto, CreateScheduleDto, TypeOfServiceDto, UserInfoDto, AdminReservation, AdminReservationsResponse, ClientReservation, AdditionalService, AdditionalServiceDto, AdditionalServicesResponse, Admin, AdminDto, AdminsResponse, InstallationDto, InstallationRequestDto, InstallationRequest, InstallationRequestsResponse } from '@/types/api';
+import type { ServiceType, ServiceTypesResponse, SchedulesResponse, Schedule, CreateReservationDto, CreateScheduleDto, TypeOfServiceDto, UserInfoDto, AdminReservation, AdminReservationsResponse, ClientReservation, AdditionalService, AdditionalServiceDto, AdditionalServicesResponse, Admin, AdminDto, AdminsResponse, InstallationDto, InstallationRequestDto, InstallationRequest, InstallationRequestsResponse, InstallationService, InstallationServiceDto } from '@/types/api';
 import { ApiClient } from './client';
 
 /**
@@ -243,4 +243,20 @@ export async function getInstallationRequests(
 
 export async function deleteInstallationRequest(initData: string, id: number): Promise<InstallationRequest> {
   return new ApiClient(initData).delete<InstallationRequest>(`/rest/admin-ui/installationRequests/${id}`);
+}
+
+export async function getInstallationServices(initData: string): Promise<InstallationService[]> {
+  return new ApiClient(initData).get<InstallationService[]>('/rest/admin-ui/installationServices');
+}
+
+export async function updateInstallationService(initData: string, id: number, dto: InstallationServiceDto): Promise<InstallationService> {
+  return new ApiClient(initData).patch<InstallationService>(`/rest/admin-ui/installationServices/${id}`, dto);
+}
+
+export async function hideInstallationService(initData: string, id: number): Promise<InstallationService> {
+  return new ApiClient(initData).patch<InstallationService>(`/rest/admin-ui/installationServices/${id}/nonActive`);
+}
+
+export async function showInstallationService(initData: string, id: number): Promise<InstallationService> {
+  return new ApiClient(initData).patch<InstallationService>(`/rest/admin-ui/installationServices/${id}/active`);
 }

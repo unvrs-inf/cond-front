@@ -1,10 +1,11 @@
 'use client'
 
 import { AddServiceTypeForm } from '@/components/admin/AddServiceTypeForm'
+import { InstallationServiceCard } from '@/components/admin/InstallationServiceCard'
 import { ServiceTypeCard } from '@/components/admin/ServiceTypeCard'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import type { ServiceType } from '@/types/api'
+import type { InstallationService, ServiceType } from '@/types/api'
 
 interface ServiceTypesTabProps {
 	serviceTypes: ServiceType[]
@@ -16,6 +17,10 @@ interface ServiceTypesTabProps {
 	onAdd: (serviceType: ServiceType) => void
 	onCancel: () => void
 	onUpdate: (updated: ServiceType) => void
+	installationServices: InstallationService[]
+	installationServicesLoading: boolean
+	installationServicesError: string | null
+	onInstallationServiceUpdate: (updated: InstallationService) => void
 }
 
 export function ServiceTypesTab({
@@ -28,6 +33,10 @@ export function ServiceTypesTab({
 	onAdd,
 	onCancel,
 	onUpdate,
+	installationServices,
+	installationServicesLoading,
+	installationServicesError,
+	onInstallationServiceUpdate,
 }: ServiceTypesTabProps) {
 	return (
 		<>
@@ -67,6 +76,39 @@ export function ServiceTypesTab({
 						serviceType={s}
 						initData={initData}
 						onUpdate={onUpdate}
+					/>
+				))}
+
+			<p
+				className='text-base font-semibold mt-6 mb-3'
+				style={{ color: 'rgba(255,255,255,0.90)' }}
+			>
+				Установка кондиционера
+			</p>
+			{installationServicesLoading && (
+				<div className='flex justify-center py-8'>
+					<LoadingSpinner />
+				</div>
+			)}
+			{!installationServicesLoading && installationServicesError && (
+				<ErrorMessage message={installationServicesError} />
+			)}
+			{!installationServicesLoading && !installationServicesError && installationServices.length === 0 && (
+				<p
+					className='text-center py-8 text-base'
+					style={{ color: 'rgba(255,255,255,0.70)' }}
+				>
+					Нет услуг по установке
+				</p>
+			)}
+			{!installationServicesLoading &&
+				!installationServicesError &&
+				installationServices.map(s => (
+					<InstallationServiceCard
+						key={s.id}
+						service={s}
+						initData={initData}
+						onUpdate={onInstallationServiceUpdate}
 					/>
 				))}
 		</>
