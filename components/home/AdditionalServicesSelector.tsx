@@ -14,7 +14,7 @@ interface AdditionalServicesSelectorProps {
 
 function formatPrice(service: AdditionalService): string {
 	const base = `${service.cost.toLocaleString('ru-RU')} ₽`
-	return service.pricingFixed && service.unitName ? `${base} за ${service.unitName}` : base
+	return !service.pricingFixed && service.unitName ? `${base} за ${service.unitName}` : base
 }
 
 export function AdditionalServicesSelector({

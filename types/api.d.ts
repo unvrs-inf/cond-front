@@ -8,6 +8,7 @@ export interface ServiceType {
 	active: boolean
 	priceFixed: boolean
 	unitName?: string
+	canBeWithAdditionalServices: boolean
 }
 
 export interface PaginationInfo {

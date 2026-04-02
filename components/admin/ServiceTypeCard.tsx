@@ -1,6 +1,6 @@
 'use client'
 
-import { hideServiceType, showServiceType, updateServiceType } from '@/lib/api/services'
+import { disableAdditionalServicesForType, enableAdditionalServicesForType, hideServiceType, showServiceType, updateServiceType } from '@/lib/api/services'
 import type { ServiceType, TypeOfServiceDto } from '@/types/api'
 import { useState } from 'react'
 
@@ -28,6 +28,7 @@ export function ServiceTypeCard({
 	)
 	const [editPriceFixed, setEditPriceFixed] = useState(serviceType.priceFixed)
 	const [editUnitName, setEditUnitName] = useState(serviceType.unitName ?? '')
+	const [canBeWithAdditional, setCanBeWithAdditional] = useState(serviceType.canBeWithAdditionalServices)
 
 	const inputStyle = {
 		background: 'rgba(255,255,255,0.1)',
@@ -49,6 +50,22 @@ export function ServiceTypeCard({
 			onUpdate(updated)
 		} catch {
 			setError('Ошибка при изменении статуса')
+		} finally {
+			setLoading(false)
+		}
+	}
+
+	async function handleToggleCanBeWithAdditional() {
+		setLoading(true)
+		setError(null)
+		try {
+			const updated = canBeWithAdditional
+				? await disableAdditionalServicesForType(initData, serviceType.id)
+				: await enableAdditionalServicesForType(initData, serviceType.id)
+			setCanBeWithAdditional(updated.canBeWithAdditionalServices)
+			onUpdate(updated)
+		} catch {
+			setError('Ошибка при изменении настройки доп. услуг')
 		} finally {
 			setLoading(false)
 		}
@@ -217,6 +234,7 @@ export function ServiceTypeCard({
 					style={{ color: 'rgba(255,255,255,0.90)' }}
 				>
 					<div>Статус: {serviceType.active ? 'Активно' : 'Скрыто'}</div>
+					<div>Оказывается с доп. услугами: {canBeWithAdditional ? 'Да' : 'Нет'}</div>
 					<div>
 						Стоимость: {serviceType.cost.toLocaleString('ru-RU')} ₽
 						{!serviceType.priceFixed && serviceType.unitName
@@ -279,6 +297,17 @@ export function ServiceTypeCard({
 						}}
 					>
 						{loading ? '...' : serviceType.active ? 'Скрыть' : 'Отобразить'}
+					</button>
+					<button
+						onClick={handleToggleCanBeWithAdditional}
+						disabled={loading}
+						className='flex-1 py-2.5 rounded-xl text-base font-medium disabled:opacity-50'
+						style={{
+							background: canBeWithAdditional ? 'rgba(255,95,95,0.25)' : 'rgba(245,197,24,0.25)',
+							color: 'rgba(255,255,255,0.95)',
+						}}
+					>
+						{loading ? '...' : canBeWithAdditional ? 'Откл. доп.' : 'Вкл. доп.'}
 					</button>
 				</div>
 			)}

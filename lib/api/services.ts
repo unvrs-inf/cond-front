@@ -132,6 +132,14 @@ export async function showServiceType(initData: string, id: number): Promise<Ser
   return new ApiClient(initData).patch<ServiceType>(`/rest/admin-ui/typeOfServices/${id}/active`);
 }
 
+export async function enableAdditionalServicesForType(initData: string, id: number): Promise<ServiceType> {
+  return new ApiClient(initData).patch<ServiceType>(`/rest/admin-ui/typeOfServices/${id}/additional/active`);
+}
+
+export async function disableAdditionalServicesForType(initData: string, id: number): Promise<ServiceType> {
+  return new ApiClient(initData).patch<ServiceType>(`/rest/admin-ui/typeOfServices/${id}/additional/nonActive`);
+}
+
 // The client-facing endpoint uses Spring HATEOAS PagedModel — content may be in
 // _embedded.additionalServiceList. We normalise both formats here.
 interface _AdditionalServicesRaw {

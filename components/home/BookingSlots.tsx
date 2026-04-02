@@ -190,7 +190,14 @@ export function BookingSlots({ service, onBack, onGoHome }: BookingSlotsProps) {
 				</button>
 				{selectedSlot && (
 					<button
-						onClick={() => setShowAdditionalServices(true)}
+						onClick={() => {
+							if (service.canBeWithAdditionalServices) {
+								setShowAdditionalServices(true)
+							} else {
+								setSelectedAdditionalServiceIds([])
+								setShowForm(true)
+							}
+						}}
 						className='flex-[2] py-4 rounded-3xl font-semibold text-black cursor-pointer transition-opacity duration-150 hover:opacity-80'
 						style={{ background: '#f5c518' }}
 					>

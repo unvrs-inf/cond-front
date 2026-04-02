@@ -104,7 +104,7 @@ function ReservationCard({
 								<span key={s.id}>
 									{i > 0 && ', '}
 									{s.serviceName} ({s.cost.toLocaleString('ru-RU')} ₽
-									{s.pricingFixed && s.unitName ? ` за ${s.unitName}` : ''})
+									{!s.pricingFixed && s.unitName ? ` за ${s.unitName}` : ''})
 								</span>
 							))}
 						</div>
