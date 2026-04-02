@@ -29,7 +29,7 @@ import type {
 	Schedule,
 	ServiceType,
 } from '@/types/api'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 type Tab =
 	| 'active'
@@ -93,160 +93,148 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 	const [installationServicesLoading, setInstallationServicesLoading] = useState(false)
 	const [installationServicesError, setInstallationServicesError] = useState<string | null>(null)
 
-	const fetchReservations = useCallback(async () => {
+	useEffect(() => {
 		if (!isReady || activeTab === 'schedules' || activeTab === 'services' || activeTab === 'additionalServices' || activeTab === 'admins' || activeTab === 'installationRequests')
 			return
+		let cancelled = false
 		setLoading(true)
 		setError(null)
 		setReservations([])
-		try {
-			let response: AdminReservationsResponse
-			if (activeTab === 'active')
-				response = await getActiveReservations(initData)
-			else if (activeTab === 'created')
-				response = await getCreatedReservations(initData)
-			else if (activeTab === 'cancelled')
-				response = await getCancelledReservations(initData)
-			else response = await getCompletedReservations(initData)
-			setReservations(response.content)
-		} catch {
-			setError('Не удалось загрузить данные')
-		} finally {
-			setLoading(false)
-		}
+		;(async () => {
+			try {
+				let response: AdminReservationsResponse
+				if (activeTab === 'active')
+					response = await getActiveReservations(initData)
+				else if (activeTab === 'created')
+					response = await getCreatedReservations(initData)
+				else if (activeTab === 'cancelled')
+					response = await getCancelledReservations(initData)
+				else response = await getCompletedReservations(initData)
+				if (!cancelled) setReservations(response.content)
+			} catch {
+				if (!cancelled) setError('Не удалось загрузить данные')
+			} finally {
+				if (!cancelled) setLoading(false)
+			}
+		})()
+		return () => { cancelled = true }
 	}, [activeTab, initData, isReady])
 
-	const fetchSchedules = useCallback(async () => {
+	useEffect(() => {
 		if (!isReady || activeTab !== 'schedules') return
+		let cancelled = false
 		setSchedulesLoading(true)
 		setSchedulesError(null)
-		try {
-			const response = await getSchedules(initData)
-			setSchedules(response.content)
-		} catch {
-			setSchedulesError('Не удалось загрузить расписание')
-		} finally {
-			setSchedulesLoading(false)
-		}
+		getSchedules(initData)
+			.then(response => { if (!cancelled) setSchedules(response.content) })
+			.catch(() => { if (!cancelled) setSchedulesError('Не удалось загрузить расписание') })
+			.finally(() => { if (!cancelled) setSchedulesLoading(false) })
+		return () => { cancelled = true }
 	}, [activeTab, initData, isReady])
 
-	const fetchServiceTypes = useCallback(async () => {
+	useEffect(() => {
 		if (!isReady || activeTab !== 'services') return
+		let cancelled = false
 		setServiceTypesLoading(true)
 		setServiceTypesError(null)
-		try {
-			const first = await getAdminServiceTypes(initData, 0)
-			const all = [...first.content]
-			for (let p = 1; p < first.page.totalPages; p++) {
-				const page = await getAdminServiceTypes(initData, p)
-				all.push(...page.content)
+		;(async () => {
+			try {
+				const first = await getAdminServiceTypes(initData, 0)
+				const all = [...first.content]
+				for (let p = 1; p < first.page.totalPages; p++) {
+					const page = await getAdminServiceTypes(initData, p)
+					all.push(...page.content)
+				}
+				if (!cancelled) setServiceTypes(all)
+			} catch {
+				if (!cancelled) setServiceTypesError('Не удалось загрузить типы услуг')
+			} finally {
+				if (!cancelled) setServiceTypesLoading(false)
 			}
-			setServiceTypes(all)
-		} catch {
-			setServiceTypesError('Не удалось загрузить типы услуг')
-		} finally {
-			setServiceTypesLoading(false)
-		}
+		})()
+		return () => { cancelled = true }
 	}, [activeTab, initData, isReady])
 
-	const fetchAdditionalServices = useCallback(async () => {
+	useEffect(() => {
 		if (!isReady || activeTab !== 'additionalServices') return
+		let cancelled = false
 		setAdditionalServicesLoading(true)
 		setAdditionalServicesError(null)
-		try {
-			const first = await getAdminAdditionalServices(initData, 0)
-			const all = [...first.content]
-			for (let p = 1; p < first.page.totalPages; p++) {
-				const page = await getAdminAdditionalServices(initData, p)
-				all.push(...page.content)
+		;(async () => {
+			try {
+				const first = await getAdminAdditionalServices(initData, 0)
+				const all = [...first.content]
+				for (let p = 1; p < first.page.totalPages; p++) {
+					const page = await getAdminAdditionalServices(initData, p)
+					all.push(...page.content)
+				}
+				if (!cancelled) setAdditionalServices(all)
+			} catch {
+				if (!cancelled) setAdditionalServicesError('Не удалось загрузить доп. услуги')
+			} finally {
+				if (!cancelled) setAdditionalServicesLoading(false)
 			}
-			setAdditionalServices(all)
-		} catch {
-			setAdditionalServicesError('Не удалось загрузить доп. услуги')
-		} finally {
-			setAdditionalServicesLoading(false)
-		}
+		})()
+		return () => { cancelled = true }
 	}, [activeTab, initData, isReady])
 
-	const fetchAdmins = useCallback(async () => {
+	useEffect(() => {
 		if (!isReady || activeTab !== 'admins') return
+		let cancelled = false
 		setAdminsLoading(true)
 		setAdminsError(null)
-		try {
-			const first = await getAdmins(initData, 0)
-			const all = [...first.content]
-			for (let p = 1; p < first.page.totalPages; p++) {
-				const page = await getAdmins(initData, p)
-				all.push(...page.content)
+		;(async () => {
+			try {
+				const first = await getAdmins(initData, 0)
+				const all = [...first.content]
+				for (let p = 1; p < first.page.totalPages; p++) {
+					const page = await getAdmins(initData, p)
+					all.push(...page.content)
+				}
+				if (!cancelled) setAdmins(all)
+			} catch {
+				if (!cancelled) setAdminsError('Не удалось загрузить администраторов')
+			} finally {
+				if (!cancelled) setAdminsLoading(false)
 			}
-			setAdmins(all)
-		} catch {
-			setAdminsError('Не удалось загрузить администраторов')
-		} finally {
-			setAdminsLoading(false)
-		}
+		})()
+		return () => { cancelled = true }
 	}, [activeTab, initData, isReady])
 
-	const fetchInstallationServices = useCallback(async () => {
+	useEffect(() => {
 		if (!isReady || activeTab !== 'services') return
+		let cancelled = false
 		setInstallationServicesLoading(true)
 		setInstallationServicesError(null)
-		try {
-			const data = await getInstallationServices(initData)
-			setInstallationServices(data)
-		} catch {
-			setInstallationServicesError('Не удалось загрузить услуги по установке')
-		} finally {
-			setInstallationServicesLoading(false)
-		}
+		getInstallationServices(initData)
+			.then(data => { if (!cancelled) setInstallationServices(data) })
+			.catch(() => { if (!cancelled) setInstallationServicesError('Не удалось загрузить услуги по установке') })
+			.finally(() => { if (!cancelled) setInstallationServicesLoading(false) })
+		return () => { cancelled = true }
 	}, [activeTab, initData, isReady])
 
-	const fetchInstallationRequests = useCallback(async () => {
+	useEffect(() => {
 		if (!isReady || activeTab !== 'installationRequests') return
+		let cancelled = false
 		setInstallationRequestsLoading(true)
 		setInstallationRequestsError(null)
-		try {
-			const first = await getInstallationRequests(initData, 0)
-			const all = [...first.content]
-			for (let p = 1; p < first.page.totalPages; p++) {
-				const page = await getInstallationRequests(initData, p)
-				all.push(...page.content)
+		;(async () => {
+			try {
+				const first = await getInstallationRequests(initData, 0)
+				const all = [...first.content]
+				for (let p = 1; p < first.page.totalPages; p++) {
+					const page = await getInstallationRequests(initData, p)
+					all.push(...page.content)
+				}
+				if (!cancelled) setInstallationRequests(all)
+			} catch {
+				if (!cancelled) setInstallationRequestsError('Не удалось загрузить заявки на монтаж')
+			} finally {
+				if (!cancelled) setInstallationRequestsLoading(false)
 			}
-			setInstallationRequests(all)
-		} catch {
-			setInstallationRequestsError('Не удалось загрузить заявки на монтаж')
-		} finally {
-			setInstallationRequestsLoading(false)
-		}
+		})()
+		return () => { cancelled = true }
 	}, [activeTab, initData, isReady])
-
-	useEffect(() => {
-		fetchReservations()
-	}, [fetchReservations])
-
-	useEffect(() => {
-		fetchSchedules()
-	}, [fetchSchedules])
-
-	useEffect(() => {
-		fetchServiceTypes()
-	}, [fetchServiceTypes])
-
-	useEffect(() => {
-		fetchAdditionalServices()
-	}, [fetchAdditionalServices])
-
-	useEffect(() => {
-		fetchAdmins()
-	}, [fetchAdmins])
-
-	useEffect(() => {
-		fetchInstallationServices()
-	}, [fetchInstallationServices])
-
-	useEffect(() => {
-		fetchInstallationRequests()
-	}, [fetchInstallationRequests])
 
 	function handleUpdate(updated: AdminReservation) {
 		setReservations(prev => prev.map(r => (r.id === updated.id ? updated : r)))

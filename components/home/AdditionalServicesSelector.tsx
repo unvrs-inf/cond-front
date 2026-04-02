@@ -29,6 +29,7 @@ export function AdditionalServicesSelector({
 
 	useEffect(() => {
 		if (!isReady) return
+		let cancelled = false
 		async function fetchServices() {
 			try {
 				const first = await getAdditionalServices(initData, 0)
@@ -37,14 +38,15 @@ export function AdditionalServicesSelector({
 					const page = await getAdditionalServices(initData, p)
 					all.push(...page.content)
 				}
-				setServices(all)
+				if (!cancelled) setServices(all)
 			} catch {
-				setError('Не удалось загрузить доп. услуги')
+				if (!cancelled) setError('Не удалось загрузить доп. услуги')
 			} finally {
-				setLoading(false)
+				if (!cancelled) setLoading(false)
 			}
 		}
 		fetchServices()
+		return () => { cancelled = true }
 	}, [initData, isReady])
 
 	function toggleSelect(id: number) {

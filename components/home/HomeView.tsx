@@ -22,10 +22,13 @@ export function HomeView() {
 
   useEffect(() => {
     if (!isReady) return
-    getUserInfo(initData).then(info => {
-      if (info.isAdmin) setIsAdmin(true)
-    }).catch(() => {})
-    getInstallation(initData).then(data => setInstallation(data))
+    let cancelled = false
+    getUserInfo(initData)
+      .then(info => { if (!cancelled && info.isAdmin) setIsAdmin(true) })
+      .catch(() => {})
+    getInstallation(initData)
+      .then(data => { if (!cancelled) setInstallation(data) })
+    return () => { cancelled = true }
   }, [isReady, initData])
 
   useEffect(() => {

@@ -146,12 +146,16 @@ export function MyReservations() {
 
 	useEffect(() => {
 		if (!isReady) return
+		let cancelled = false
 		getClientActiveReservations(initData)
 			.then(data => {
-				setReservations(data)
-				setLoaded(true)
+				if (!cancelled) {
+					setReservations(data)
+					setLoaded(true)
+				}
 			})
-			.catch(() => setLoaded(true))
+			.catch(() => { if (!cancelled) setLoaded(true) })
+		return () => { cancelled = true }
 	}, [isReady, initData])
 
 	if (!loaded || reservations.length === 0) return null

@@ -20,6 +20,7 @@ export function ServiceList({ onSelect }: ServiceListProps) {
 
 	useEffect(() => {
 		if (!isReady) return
+		let cancelled = false
 
 		async function fetchServices() {
 			try {
@@ -33,18 +34,21 @@ export function ServiceList({ onSelect }: ServiceListProps) {
 					const next = await getServiceTypes(initData, page, 50)
 					all = [...all, ...next.content]
 				}
-				setServices(all)
+				if (!cancelled) setServices(all)
 			} catch (err) {
-				const errorMessage =
-					(err as { message?: string }).message || 'Не удалось загрузить услуги'
-				setError(errorMessage)
-				console.error('Failed to fetch services:', err)
+				if (!cancelled) {
+					const errorMessage =
+						(err as { message?: string }).message || 'Не удалось загрузить услуги'
+					setError(errorMessage)
+					console.error('Failed to fetch services:', err)
+				}
 			} finally {
-				setLoading(false)
+				if (!cancelled) setLoading(false)
 			}
 		}
 
 		fetchServices()
+		return () => { cancelled = true }
 	}, [isReady, initData])
 
 	if (loading) {

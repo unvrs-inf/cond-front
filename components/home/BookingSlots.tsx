@@ -43,17 +43,19 @@ export function BookingSlots({ service, onBack, onGoHome }: BookingSlotsProps) {
 
 	useEffect(() => {
 		if (!isReady) return
+		let cancelled = false
 		async function fetchSchedules() {
 			try {
 				const data = await getSchedules(initData)
-				setSchedules(data.content)
+				if (!cancelled) setSchedules(data.content)
 			} catch {
-				setError('Не удалось загрузить расписание')
+				if (!cancelled) setError('Не удалось загрузить расписание')
 			} finally {
-				setLoadingSchedules(false)
+				if (!cancelled) setLoadingSchedules(false)
 			}
 		}
 		fetchSchedules()
+		return () => { cancelled = true }
 	}, [initData, isReady])
 
 	async function handleDaySelect(date: string) {
@@ -113,7 +115,8 @@ export function BookingSlots({ service, onBack, onGoHome }: BookingSlotsProps) {
 							<button
 								key={schedule.id}
 								onClick={() => handleDaySelect(schedule.date)}
-								className='px-4 py-2 rounded-2xl text-white text-sm font-medium cursor-pointer transition-opacity duration-150 hover:opacity-80'
+								disabled={loadingSlots}
+								className='px-4 py-2 rounded-2xl text-white text-sm font-medium transition-opacity duration-150'
 								style={{
 									background: isSelected
 										? 'rgba(245,197,24,0.2)'
@@ -123,6 +126,8 @@ export function BookingSlots({ service, onBack, onGoHome }: BookingSlotsProps) {
 									border: isSelected
 										? '1.5px solid #f5c518'
 										: '1.5px solid transparent',
+									opacity: loadingSlots ? 0.5 : 1,
+									cursor: loadingSlots ? 'default' : 'pointer',
 								}}
 							>
 								{formatDate(schedule.date)}
