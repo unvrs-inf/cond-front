@@ -145,7 +145,7 @@ export function MyReservations() {
 	const [expanded, setExpanded] = useState(false)
 
 	useEffect(() => {
-		if (!isReady) return
+		if (!isReady || !initData) return
 		let cancelled = false
 		getClientActiveReservations(initData)
 			.then(data => {

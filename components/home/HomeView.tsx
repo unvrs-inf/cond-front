@@ -21,7 +21,7 @@ export function HomeView() {
   const [installationOpen, setInstallationOpen] = useState(false)
 
   useEffect(() => {
-    if (!isReady) return
+    if (!isReady || !initData) return
     let cancelled = false
     getUserInfo(initData)
       .then(info => { if (!cancelled && info.isAdmin) setIsAdmin(true) })

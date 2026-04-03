@@ -42,7 +42,7 @@ export function BookingSlots({ service, onBack, onGoHome }: BookingSlotsProps) {
 	const [selectedAdditionalServiceIds, setSelectedAdditionalServiceIds] = useState<number[]>([])
 
 	useEffect(() => {
-		if (!isReady) return
+		if (!isReady || !initData) return
 		let cancelled = false
 		async function fetchSchedules() {
 			try {
@@ -115,7 +115,7 @@ export function BookingSlots({ service, onBack, onGoHome }: BookingSlotsProps) {
 							<button
 								key={schedule.id}
 								onClick={() => handleDaySelect(schedule.date)}
-								disabled={loadingSlots}
+								disabled={loadingSlots || isSelected}
 								className='px-4 py-2 rounded-2xl text-white text-sm font-medium transition-opacity duration-150'
 								style={{
 									background: isSelected
@@ -127,7 +127,7 @@ export function BookingSlots({ service, onBack, onGoHome }: BookingSlotsProps) {
 										? '1.5px solid #f5c518'
 										: '1.5px solid transparent',
 									opacity: loadingSlots ? 0.5 : 1,
-									cursor: loadingSlots ? 'default' : 'pointer',
+									cursor: loadingSlots || isSelected ? 'default' : 'pointer',
 								}}
 							>
 								{formatDate(schedule.date)}

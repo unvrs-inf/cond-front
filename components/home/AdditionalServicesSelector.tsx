@@ -28,7 +28,7 @@ export function AdditionalServicesSelector({
 	const [error, setError] = useState<string | null>(null)
 
 	useEffect(() => {
-		if (!isReady) return
+		if (!isReady || !initData) return
 		let cancelled = false
 		async function fetchServices() {
 			try {

@@ -94,7 +94,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 	const [installationServicesError, setInstallationServicesError] = useState<string | null>(null)
 
 	useEffect(() => {
-		if (!isReady || activeTab === 'schedules' || activeTab === 'services' || activeTab === 'additionalServices' || activeTab === 'admins' || activeTab === 'installationRequests')
+		if (!isReady || !initData || activeTab === 'schedules' || activeTab === 'services' || activeTab === 'additionalServices' || activeTab === 'admins' || activeTab === 'installationRequests')
 			return
 		let cancelled = false
 		setLoading(true)
@@ -121,7 +121,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 	}, [activeTab, initData, isReady])
 
 	useEffect(() => {
-		if (!isReady || activeTab !== 'schedules') return
+		if (!isReady || !initData || activeTab !== 'schedules') return
 		let cancelled = false
 		setSchedulesLoading(true)
 		setSchedulesError(null)
@@ -133,7 +133,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 	}, [activeTab, initData, isReady])
 
 	useEffect(() => {
-		if (!isReady || activeTab !== 'services') return
+		if (!isReady || !initData || activeTab !== 'services') return
 		let cancelled = false
 		setServiceTypesLoading(true)
 		setServiceTypesError(null)
@@ -156,7 +156,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 	}, [activeTab, initData, isReady])
 
 	useEffect(() => {
-		if (!isReady || activeTab !== 'additionalServices') return
+		if (!isReady || !initData || activeTab !== 'additionalServices') return
 		let cancelled = false
 		setAdditionalServicesLoading(true)
 		setAdditionalServicesError(null)
@@ -179,7 +179,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 	}, [activeTab, initData, isReady])
 
 	useEffect(() => {
-		if (!isReady || activeTab !== 'admins') return
+		if (!isReady || !initData || activeTab !== 'admins') return
 		let cancelled = false
 		setAdminsLoading(true)
 		setAdminsError(null)
@@ -202,7 +202,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 	}, [activeTab, initData, isReady])
 
 	useEffect(() => {
-		if (!isReady || activeTab !== 'services') return
+		if (!isReady || !initData || activeTab !== 'services') return
 		let cancelled = false
 		setInstallationServicesLoading(true)
 		setInstallationServicesError(null)
@@ -214,7 +214,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 	}, [activeTab, initData, isReady])
 
 	useEffect(() => {
-		if (!isReady || activeTab !== 'installationRequests') return
+		if (!isReady || !initData || activeTab !== 'installationRequests') return
 		let cancelled = false
 		setInstallationRequestsLoading(true)
 		setInstallationRequestsError(null)
