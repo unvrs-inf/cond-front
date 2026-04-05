@@ -3,11 +3,24 @@
 import Image from 'next/image'
 import { useRef, useState } from 'react'
 
+const PHONES = [
+	{ display: '+7 (951) 068-09-61', raw: '+79510680961' },
+	{ display: '+7 (965) 594-59-99', raw: '+79655945999' },
+]
+
 export function Header() {
-	const [copied, setCopied] = useState(false)
+	const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
 	const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
 		undefined,
 	)
+
+	function handleCopy(raw: string, idx: number) {
+		navigator.clipboard.writeText(raw).then(() => {
+			clearTimeout(copiedTimerRef.current)
+			setCopiedIndex(idx)
+			copiedTimerRef.current = setTimeout(() => setCopiedIndex(null), 2000)
+		})
+	}
 
 	return (
 		<header className='fixed top-0 left-0 right-0 h-14 z-50 flex items-center justify-between px-4 py-10'>
@@ -26,43 +39,48 @@ export function Header() {
 				/>
 			</button>
 			<div
-				className='flex flex-col items-start px-3 py-1.5 rounded-2xl'
+				className='flex flex-col px-3 py-1.5 rounded-2xl'
 				style={{
 					background: 'rgba(10,20,60,0.50)',
 					backdropFilter: 'blur(12px)',
 					WebkitBackdropFilter: 'blur(12px)',
 				}}
 			>
-				<a
-					href='tel:+78000000000'
-					className='text-sm font-normal text-yellow-400'
-					onClick={e => {
-						if (window.Telegram?.WebApp) {
-							e.preventDefault()
-							navigator.clipboard.writeText('+78000000000').then(() => {
-								setCopied(true)
-								clearTimeout(copiedTimerRef.current)
-								copiedTimerRef.current = setTimeout(
-									() => setCopied(false),
-									2000,
-								)
-							})
-						}
-					}}
-				>
-					+7 (800) 000-00-00
-				</a>
-				{copied && (
-					<span
-						style={{
-							color: 'rgba(255,255,255,0.80)',
-							marginLeft: 3,
-							fontSize: '0.65rem',
-						}}
-					>
-						✓ Скопировано
-					</span>
-				)}
+				{PHONES.map((phone, idx) => (
+					<div key={phone.raw}>
+						{idx > 0 && (
+							<div
+								style={{
+									borderTop: '1px solid rgba(255,255,255,0.10)',
+									margin: '2px 0',
+								}}
+							/>
+						)}
+						<a
+							href={`tel:${phone.raw}`}
+							className='text-sm font-normal text-yellow-400 block'
+							onClick={e => {
+								if (window.Telegram?.WebApp) {
+									e.preventDefault()
+									handleCopy(phone.raw, idx)
+								}
+							}}
+						>
+							{phone.display}
+						</a>
+						{copiedIndex === idx && (
+							<span
+								style={{
+									color: 'rgba(255,255,255,0.80)',
+									fontSize: '0.65rem',
+									display: 'block',
+								}}
+							>
+								✓ Скопировано
+							</span>
+						)}
+					</div>
+				))}
 			</div>
 		</header>
 	)
