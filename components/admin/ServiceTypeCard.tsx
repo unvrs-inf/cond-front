@@ -1,8 +1,8 @@
 'use client'
 
-import { disableAdditionalServicesForType, enableAdditionalServicesForType, hideServiceType, showServiceType, updateServiceType } from '@/lib/api/services'
+import { disableAdditionalServicesForType, enableAdditionalServicesForType, hideServiceType, showServiceType, updateServiceType, uploadServiceTypeImage } from '@/lib/api/services'
 import type { ServiceType, TypeOfServiceDto } from '@/types/api'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 interface ServiceTypeCardProps {
 	serviceType: ServiceType
@@ -29,6 +29,10 @@ export function ServiceTypeCard({
 	const [editPriceFixed, setEditPriceFixed] = useState(serviceType.priceFixed)
 	const [editUnitName, setEditUnitName] = useState(serviceType.unitName ?? '')
 	const [canBeWithAdditional, setCanBeWithAdditional] = useState(serviceType.canBeWithAdditionalServices)
+	const [imageUrl, setImageUrl] = useState(serviceType.imageUrl)
+	const [imageLoading, setImageLoading] = useState(false)
+	const [imageError, setImageError] = useState<string | null>(null)
+	const fileInputRef = useRef<HTMLInputElement>(null)
 
 	const inputStyle = {
 		background: 'rgba(255,255,255,0.1)',
@@ -68,6 +72,23 @@ export function ServiceTypeCard({
 			setError('Ошибка при изменении настройки доп. услуг')
 		} finally {
 			setLoading(false)
+		}
+	}
+
+	async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+		const file = e.target.files?.[0]
+		if (!file) return
+		setImageLoading(true)
+		setImageError(null)
+		try {
+			const updated = await uploadServiceTypeImage(initData, serviceType.id, file)
+			setImageUrl(updated.imageUrl)
+			onUpdate(updated)
+		} catch {
+			setImageError('Ошибка при загрузке изображения')
+		} finally {
+			setImageLoading(false)
+			e.target.value = ''
 		}
 	}
 
@@ -250,6 +271,35 @@ export function ServiceTypeCard({
 					)}
 				</div>
 			)}
+
+			<div className='flex items-center gap-3 mb-3'>
+				{imageUrl && (
+					// eslint-disable-next-line @next/next/no-img-element
+					<img
+						src={imageUrl.startsWith('/') ? `${process.env.NEXT_PUBLIC_API_URL}${imageUrl}` : imageUrl}
+						alt='Изображение услуги'
+						style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }}
+					/>
+				)}
+				<div>
+					<input
+						ref={fileInputRef}
+						type='file'
+						accept='image/jpeg,image/png,image/webp,image/gif'
+						style={{ display: 'none' }}
+						onChange={handleImageChange}
+					/>
+					<button
+						onClick={() => fileInputRef.current?.click()}
+						disabled={imageLoading || loading}
+						className='py-1.5 px-3 rounded-xl text-sm font-medium disabled:opacity-50'
+						style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.95)' }}
+					>
+						{imageLoading ? '...' : imageUrl ? 'Изменить фото' : 'Загрузить фото'}
+					</button>
+					{imageError && <p className='text-xs mt-1' style={{ color: '#ff5f5f' }}>{imageError}</p>}
+				</div>
+			</div>
 
 			{error && <p className='text-sm text-red-400 mb-2'>{error}</p>}
 			{editing ? (

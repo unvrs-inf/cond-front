@@ -118,4 +118,46 @@ export class ApiClient {
   async delete<T>(endpoint: string): Promise<T> {
     return this.fetch<T>(endpoint, { method: 'DELETE' });
   }
+
+  /**
+   * Makes a POST request with FormData (multipart/form-data).
+   * Does NOT set Content-Type — browser sets it with boundary automatically.
+   */
+  async postFormData<T>(endpoint: string, formData: FormData): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    const headers: Record<string, string> = {};
+    if (this.initData) headers['X-Telegram-Init-Data'] = this.initData;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30_000);
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: formData,
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const error: ApiError = {
+          message: errorData.message || `HTTP error ${response.status}`,
+          status: response.status,
+          details: errorData,
+        };
+        throw error;
+      }
+      return await response.json();
+    } catch (error) {
+      if ((error as ApiError).status) throw error;
+      const apiError: ApiError = {
+        message: error instanceof Error
+          ? (error.name === 'AbortError' ? 'Превышено время ожидания запроса' : error.message)
+          : 'Unknown error occurred',
+        details: error,
+      };
+      throw apiError;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
 }

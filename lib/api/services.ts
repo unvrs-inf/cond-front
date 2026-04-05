@@ -268,3 +268,15 @@ export async function hideInstallationService(initData: string, id: number): Pro
 export async function showInstallationService(initData: string, id: number): Promise<InstallationService> {
   return new ApiClient(initData).patch<InstallationService>(`/rest/admin-ui/installationServices/${id}/active`);
 }
+
+export async function uploadServiceTypeImage(initData: string, id: number, file: File): Promise<ServiceType> {
+  const formData = new FormData();
+  formData.append('file', file);
+  return new ApiClient(initData).postFormData<ServiceType>(`/rest/admin-ui/typeOfServices/${id}/image`, formData);
+}
+
+export async function uploadAdditionalServiceImage(initData: string, id: number, file: File): Promise<AdditionalService> {
+  const formData = new FormData();
+  formData.append('file', file);
+  return new ApiClient(initData).postFormData<AdditionalService>(`/rest/admin-ui/additionalServices/${id}/image`, formData);
+}
