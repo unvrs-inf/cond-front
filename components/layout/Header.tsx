@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { useRef, useState } from 'react'
 
 const PHONES = [
-	{ display: '+7 (951) 068-09-61', raw: '+79510680961' },
+	{ display: '+7 (995) 766-00-71', raw: '+79957660071' },
 	{ display: '+7 (965) 594-59-99', raw: '+79655945999' },
 ]
 
