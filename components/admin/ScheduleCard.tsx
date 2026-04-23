@@ -1,7 +1,7 @@
 'use client'
 
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
-import { deleteSchedule, updateSchedule } from '@/lib/api/services'
+import { blockScheduleSlot, deleteSchedule, getAdminScheduleSlots, updateSchedule } from '@/lib/api/services'
 import type { Schedule } from '@/types/api'
 import { useState } from 'react'
 import { formatScheduleDate } from './formatters'
@@ -29,6 +29,12 @@ export function ScheduleCard({
 	)
 	const [editEnding, setEditEnding] = useState(schedule.workEnding.slice(0, 5))
 
+	const [slotsOpen, setSlotsOpen] = useState(false)
+	const [slots, setSlots] = useState<string[]>([])
+	const [slotsLoading, setSlotsLoading] = useState(false)
+	const [slotsError, setSlotsError] = useState<string | null>(null)
+	const [confirmSlot, setConfirmSlot] = useState<string | null>(null)
+
 	const inputStyle = {
 		background: 'rgba(255,255,255,0.1)',
 		color: 'white',
@@ -49,6 +55,40 @@ export function ScheduleCard({
 		} catch {
 			setError('Ошибка при удалении')
 			setLoading(false)
+		}
+	}
+
+	async function handleToggleSlots() {
+		if (slotsOpen) {
+			setSlotsOpen(false)
+			return
+		}
+		setSlotsOpen(true)
+		setSlotsLoading(true)
+		setSlotsError(null)
+		try {
+			const data = await getAdminScheduleSlots(initData, schedule.date)
+			setSlots(data)
+		} catch {
+			setSlotsError('Не удалось загрузить слоты')
+		} finally {
+			setSlotsLoading(false)
+		}
+	}
+
+	async function handleBlockSlot() {
+		if (!confirmSlot) return
+		const dateTime = `${schedule.date}T${confirmSlot}`
+		setConfirmSlot(null)
+		setSlotsLoading(true)
+		setSlotsError(null)
+		try {
+			const updated = await blockScheduleSlot(initData, dateTime)
+			setSlots(updated)
+		} catch {
+			setSlotsError('Ошибка при блокировке слота')
+		} finally {
+			setSlotsLoading(false)
 		}
 	}
 
@@ -141,6 +181,46 @@ export function ScheduleCard({
 					{schedule.workEnding.slice(0, 5)}
 				</div>
 			)}
+			{slotsOpen && (
+				<div className='mb-3'>
+					{slotsLoading ? (
+						<p className='text-sm text-center py-2' style={{ color: 'rgba(255,255,255,0.70)' }}>
+							Загрузка слотов...
+						</p>
+					) : slotsError ? (
+						<p className='text-sm' style={{ color: '#ff5f5f' }}>{slotsError}</p>
+					) : slots.length === 0 ? (
+						<p className='text-sm' style={{ color: 'rgba(255,255,255,0.70)' }}>
+							Нет доступных слотов
+						</p>
+					) : (
+						<div className='grid grid-cols-3 gap-2'>
+							{slots.map(slot => (
+								<button
+									key={slot}
+									onClick={() => setConfirmSlot(slot)}
+									className='py-2 rounded-2xl text-white text-sm font-medium transition-opacity duration-150 hover:opacity-80'
+									style={{
+										background: 'rgba(15,25,65,0.85)',
+										backdropFilter: 'blur(12px)',
+										WebkitBackdropFilter: 'blur(12px)',
+										border: '1.5px solid transparent',
+									}}
+								>
+									{slot.replace(/:\d{2}$/, '')}
+								</button>
+							))}
+						</div>
+					)}
+				</div>
+			)}
+			{confirmSlot && (
+				<ConfirmDialog
+					message={`Вы действительно хотите заблокировать слот ${confirmSlot.replace(/:\d{2}$/, '')}?`}
+					onConfirm={handleBlockSlot}
+					onCancel={() => setConfirmSlot(null)}
+				/>
+			)}
 			{confirmOpen && (
 				<ConfirmDialog
 					message='Вы точно хотите удалить расписание?'
@@ -186,6 +266,17 @@ export function ScheduleCard({
 						style={{ background: '#f5c518', color: '#1a1a1a' }}
 					>
 						Изменить
+					</button>
+					<button
+						onClick={handleToggleSlots}
+						disabled={loading}
+						className='flex-1 py-2.5 rounded-xl text-base font-medium disabled:opacity-50'
+						style={{
+							background: slotsOpen ? 'rgba(245,197,24,0.25)' : 'rgba(255,255,255,0.12)',
+							color: 'rgba(255,255,255,0.95)',
+						}}
+					>
+						{slotsOpen ? 'Скрыть слоты' : 'Слоты'}
 					</button>
 					<button
 						onClick={() => setConfirmOpen(true)}

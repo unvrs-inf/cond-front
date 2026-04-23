@@ -4,15 +4,18 @@ import { useTelegram } from '@/components/providers/TelegramProvider'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { getServiceTypes } from '@/lib/api/services'
-import type { ServiceType } from '@/types/api'
+import type { ServiceType, InstallationDto } from '@/types/api'
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { ServiceCard } from './ServiceCard'
 
 interface ServiceListProps {
 	onSelect: (service: ServiceType) => void
+	installation?: InstallationDto | null
+	onInstallationClick?: () => void
 }
 
-export function ServiceList({ onSelect }: ServiceListProps) {
+export function ServiceList({ onSelect, installation, onInstallationClick }: ServiceListProps) {
 	const { initData, isReady } = useTelegram()
 	const [services, setServices] = useState<ServiceType[]>([])
 	const [loading, setLoading] = useState(true)
@@ -34,7 +37,12 @@ export function ServiceList({ onSelect }: ServiceListProps) {
 					const next = await getServiceTypes(initData, page, 50)
 					all = [...all, ...next.content]
 				}
-				if (!cancelled) setServices(all)
+				const sorted = [...all].sort((a, b) => {
+						if (a.serviceName === 'Чистка кондиционера') return -1
+						if (b.serviceName === 'Чистка кондиционера') return 1
+						return 0
+					})
+					if (!cancelled) setServices(sorted)
 			} catch (err) {
 				if (!cancelled) {
 					const errorMessage =
@@ -67,19 +75,59 @@ export function ServiceList({ onSelect }: ServiceListProps) {
 		)
 	}
 
-	const isFullWidth = services.length < 2
+	const installationImageSrc = installation?.imageUrl
+		? installation.imageUrl.startsWith('http')
+			? installation.imageUrl
+			: `${process.env.NEXT_PUBLIC_API_URL || ''}${installation.imageUrl}`
+		: null
 
 	return (
 		<div>
-			<div className={`grid ${isFullWidth ? 'grid-cols-1' : 'grid-cols-2'} gap-4 mb-8`}>
+			<div className='grid grid-cols-1 gap-4 mb-8'>
 				{services.map(service => (
 					<ServiceCard
 						key={service.id}
 						service={service}
-						fullWidth={isFullWidth}
+						fullWidth
 						onClick={() => onSelect(service)}
 					/>
 				))}
+				{installation && onInstallationClick && (
+					<div
+						className='relative cursor-pointer transition-transform duration-200 hover:scale-[1.03] active:scale-[0.97]'
+						style={{ minHeight: '320px' }}
+						onClick={onInstallationClick}
+					>
+						<div
+							className='absolute inset-0 rounded-3xl overflow-hidden'
+							style={{
+								background: 'rgba(100, 150, 255, 0.13)',
+								backdropFilter: 'blur(12px)',
+								WebkitBackdropFilter: 'blur(12px)',
+							}}
+						>
+							<div className='absolute top-0 right-0 w-[238px] h-[220px]'>
+								{installationImageSrc ? (
+									<Image
+										src={installationImageSrc}
+										alt={installation.name}
+										fill
+										className='object-cover'
+									/>
+								) : (
+									<div className='w-full h-full flex items-center justify-center bg-slate-700'>
+										<span className='text-3xl'>❄️</span>
+									</div>
+								)}
+							</div>
+							<div className='absolute bottom-5 left-5 right-5'>
+								<p className='text-yellow-400 uppercase font-medium leading-tight mb-1 line-clamp-2 text-lg'>
+									{installation.name}
+								</p>
+							</div>
+						</div>
+					</div>
+				)}
 			</div>
 		</div>
 	)

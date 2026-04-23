@@ -172,6 +172,7 @@ export interface AdminsResponse {
 export interface InstallationDto {
 	name: string
 	description: string
+	imageUrl?: string
 }
 
 export interface InstallationRequestDto {
@@ -200,6 +201,7 @@ export interface InstallationService {
 	id: number
 	name: string
 	description: string
+	imageUrl?: string
 	active: boolean
 }
 

@@ -53,13 +53,14 @@ export function HomeView() {
         <ServiceDetail service={selected} onBack={() => setSelected(null)} />
       ) : (
         <>
-          <HeroBanner
-            installation={installation}
-            onInstallationClick={() => setInstallationOpen(true)}
-          />
+          <HeroBanner />
           <MyReservations />
           <section className='p-4'>
-            <ServiceList onSelect={setSelected} />
+            <ServiceList
+              onSelect={setSelected}
+              installation={installation}
+              onInstallationClick={() => setInstallationOpen(true)}
+            />
           </section>
         </>
       )}
